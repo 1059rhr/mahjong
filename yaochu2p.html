@@ -226,8 +226,6 @@ h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-siz
 <div id="toasts"></div>
 <script>
 "use strict";
-/* ============================ ENGINE_START ============================ */
-/* 牌ID: 0:1萬 1:9萬 2:1筒 3:9筒 4:1索 5:9索 6:東 7:南 8:西 9:北 10:白 11:發 12:中 */
 const TT=[
  {n:"1",s:"萬",c:"m"},{n:"9",s:"萬",c:"m"},
  {n:"1",s:"筒",c:"p"},{n:"9",s:"筒",c:"p"},
@@ -297,8 +295,6 @@ function limitName(han,fu,yn){
   if(han>=5||basePoints(han,fu,0)>=2000)return "満貫";
   return "";
 }
-/* 和了解析: o={counts14,melds,winTile,tsumo,riichi,doubleRiichi,ippatsu,
-   seatWind,roundWind,haitei,houtei,rinshan,chankan,tenhou,chihou,doraTiles,uraTiles} */
 function analyzeWin(o){
   const c=o.counts14,m=o.melds.length;
   const chii=winChiitoi(c,m),kok=winKokushi(c,m),std=winStd(c,m);
@@ -372,8 +368,6 @@ function analyzeWin(o){
     seatWind:o.seatWind,roundWind:o.roundWind,waitType,tsumo:o.tsumo,menzen});
   return {yakuman:[],yakumanN:0,yaku,han,fu,doraHan,uraHan,chiitoi:chii,menzen,waitType};
 }
-/* ============================ ENGINE_END ============================ */
-/* ======================= 永続化アダプタ ======================= */
 const memStore={};
 async function stGet(k){
   try{ if(typeof window!=="undefined"&&window.storage){
@@ -388,7 +382,6 @@ async function stSet(k,v){
   try{ if(typeof window!=="undefined"&&window.storage){ await window.storage.set(k,v); } }catch(e){}
   try{ localStorage.setItem(k,v); }catch(e){}
 }
-/* ======================= 実績 ======================= */
 const ACHV=[
  ["riichi","立直","リーチをかけて和了"],
  ["dbriichi","ダブル立直","第一打でリーチして和了"],
@@ -438,14 +431,12 @@ function grantAchv(ids){
   saveAchv();
   fresh.forEach((id,k)=>setTimeout(()=>toast("実績解除ですわ　"+YAKU_NAME[id]),k*500));
 }
-/* ======================= 汎用 ======================= */
 const a2=(a,b)=>a-b;
 let sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function removeN(hand,t,n){
   for(let i=hand.length-1;i>=0&&n>0;i--){ if(hand[i]===t){hand.splice(i,1);n--;} }
 }
 function tileName(t){ const d=TT[t]; return d.z||(d.n+d.s); }
-/* ======================= 対局状態 ======================= */
 const G={};
 const ROUND_NAMES=["東1局","東2局","南1局","南2局"];
 function dealerIdx(){ return G.round%2; }
@@ -569,7 +560,6 @@ function revealDora(){ if(G.doraRevealed<G.doraInd.length)G.doraRevealed++; }
 function clearIppatsu(){ for(const p of G.players)p.ippatsu=false; }
 async function doKan(i,opt){
   const p=G.players[i], opp=1-i, po=G.players[opp];
-  /* 槍槓ウィンドウ: 加槓のみ(全和了形)｡暗槓は不可 */
   const co=countsOf(po.hand);
   if(opt.kind==="kakan"&&co[opt.tile]<4){
     co[opt.tile]++;
@@ -718,7 +708,7 @@ async function settleWin(i,winTile,tsumo,flags){
     tenhou:!!flags.tenhou, chihou:!!flags.chihou,
     doraTiles, uraTiles, furiten:wasFuriten
   });
-  if(!res){ console.error("和了解析不能"); return; }
+  if(!res){ return; }
   if(i===1)G.revealCPU=true;
   const isD=(i===dealerIdx());
   const honbaWas=G.honba;
@@ -787,7 +777,6 @@ async function gameEnd(){
   await showOverlay(h,[{label:"もう一局ですわ",val:1}]);
   newGame();
 }
-/* ======================= CPU ======================= */
 function visibleRemain(t,i){
   let seen=countsOf(G.players[i].hand)[t];
   for(const pl of G.players){
@@ -880,7 +869,6 @@ function cpuReact(i,tile,can){
   }
   return "pass";
 }
-/* ======================= 入力 ======================= */
 let inputState=null;
 function awaitInput(o){
   return new Promise(res=>{
@@ -946,7 +934,6 @@ async function humanReact(can){
   buttons.push({label:"スルー",val:"pass",cls:"sub"});
   return await awaitInput({buttons});
 }
-/* ======================= 描画 ======================= */
 const TILE_IMG=[
 "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M52.9 722.3c-17.5 0-9 19-1 19.5 56.5 12.3 92.4-11.6 131.5-9.5 20.7 2 53.8 11 61.5 15.6 1.7 1 4 .7 5 .2 8.4-4.4 7.7-25.1 4.4-36.9-1-3.4-8.7-7.7-15 .2-2.2 2.1-11 .7-12.8-.6-8.4-5.7-31.4-11.2-43.5-8-46.3 9.7-82.8 26.5-130.1 19.5' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(0 -652.4)'/%3E%3Cpath d='M-973.9 230.3c101.5 10.8 95-15.7 180-18.5 19-2.8 17.7-17.5-.4-16-90.4 2.2-58.8 34.9-177.7 16-29-5.1-24.2 14.6-1.9 18.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-882.6 187.1c1.3-3.9-8-10.1-13.3-3.4-4.8 7.4-6.2 12.1-10.8 17.4-2 2.4-2.3 7.7-.2 9.3 7.5 6.1 6.7 4.7 11.5 14.7l20.5-1.8c-6.5-8.6-7.6-7.8-10.1-16.4-1.2-9.3-.8-10.2 2.4-19.8m25.8-37.9c-2.1-2.2-3.4-3-6.3 0l-15.3 15.5c-1.4 1.5-1.4 3.7-.3 5l9.2 8.8c4.3 4.3 5.4 7.3 2.9 12.4a97 97 0 0 0-6.1 24.7l21.1-3.5c-4-9.8-3.8-12.4 3-21.7 5.5-6.3 10.8-7.7 5.9-16.4zm22.4 80.3q-3.7.1-8 .7c-26 4.2-44.7 13.7-87.8 12.1-5.9 0-10.8 3.2-10.6 7.6.4 10 7.7 62.2 8.3 67 .9 6.3 9.8 7 11 1.3.2-1 .2-4 0-8q1-1.8 2.4-2.2l57-5.1q.8 0 1.3 1.3c-.5 20.1-.7 39.8-.3 46.6.1 1.6 0 3.2 1.6 4.5 3.6 3 24.1 1.4 29.4-2 1.5-1 2-1.5 2.2-3.7-3-34-.7-77.3 1.6-111 .6-7.4-2.9-9-8.1-9m-27 16.8c5.6-1.4 2 15.8 0 15.9l-58.8 4.6c-5-1-4.8-13-1.4-13.2 26.7-1 35.8-3.2 60.2-7.3m-.1 29.1c1.7 0 2 12.4-.4 12.6l-57.3 4.8c-4.2-1.1-4.4-12-.8-12.5z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-881.5 246.3-19.3.7-5.3 90.5c-.7 10.3 4.5 20.6 11.3 20.8l18.7-6.6z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-942.6 355 .8 8c54.3 18.3 41.6-8.6 96.9-15.2l-.6-5c-42.3-2.9-64.4 13.3-97.1 12.1' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-947.8 295.5c-4.8-14.3-18-11.5-15.6.9 14 43.4 18 67.5 19.8 70.9 10.8 18.2 18.4 13.4 19-2.5.2-4.8-14.1-43.5-23.2-69.3' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-990.5 324.5c-8.4-1.3-7.6 9.1-3.3 11.3 59.8 26.5 123.8-8.9 178-5.7 2 .4 5.3 1.6 8.2 3.2 9.6 5 3.8 19.5-1 22.5-21.5 9.8-16.4 0-40.6 11.2-2.3 1.5-8.3 2.6-10.5 1.7-9-3-16.3-8-22.1-12.6l-11.2 5.6c6.9 8.6 17 12.7 25.5 16.4 6.8 3.2 14.1 2.8 19 3 25.1.3 48.6-9.3 60.4-10.8 3.5-.5 7.5-6.5 9-9.3 9.8-15.9 5.8-18.6-1-35.2-3.8-6.2-15-8-20.8-8.8-60.7-2.5-138.3 18.8-189.6 7.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3C/svg%3E",
 "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M-973.9 230.3c101.5 10.8 95-15.7 180-18.5 19-2.8 17.7-17.5-.4-16-90.4 2.2-58.8 34.9-177.7 16-29-5.1-24.2 14.6-1.9 18.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-882.6 187.1c1.3-3.9-8-10.1-13.3-3.4-4.8 7.4-6.2 12.1-10.8 17.4-2 2.4-2.3 7.7-.2 9.3 7.5 6.1 6.7 4.7 11.5 14.7l20.5-1.8c-6.5-8.6-7.6-7.8-10.1-16.4-1.2-9.3-.8-10.2 2.4-19.8m25.8-37.9c-2.1-2.2-3.4-3-6.3 0l-15.3 15.5c-1.4 1.5-1.4 3.7-.3 5l9.2 8.8c4.3 4.3 5.4 7.3 2.9 12.4a97 97 0 0 0-6.1 24.7l21.1-3.5c-4-9.8-3.8-12.4 3-21.7 5.5-6.3 10.8-7.7 5.9-16.4zm22.4 80.3q-3.7.1-8 .7c-26 4.2-44.7 13.7-87.8 12.1-5.9 0-10.8 3.2-10.6 7.6.4 10 7.7 62.2 8.3 67 .9 6.3 9.8 7 11 1.3.2-1 .2-4 0-8q1-1.8 2.4-2.2l57-5.1q.8 0 1.3 1.3c-.5 20.1-.7 39.8-.3 46.6.1 1.6 0 3.2 1.6 4.5 3.6 3 24.1 1.4 29.4-2 1.5-1 2-1.5 2.2-3.7-3-34-.7-77.3 1.6-111 .6-7.4-2.9-9-8.1-9m-27 16.8c5.6-1.4 2 15.8 0 15.9l-58.8 4.6c-5-1-4.8-13-1.4-13.2 26.7-1 35.8-3.2 60.2-7.3m-.1 29.1c1.7 0 2 12.4-.4 12.6l-57.3 4.8c-4.2-1.1-4.4-12-.8-12.5z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-881.5 246.3-19.3.7-5.3 90.5c-.7 10.3 4.5 20.6 11.3 20.8l18.7-6.6z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-942.6 355 .8 8c54.3 18.3 41.6-8.6 96.9-15.2l-.6-5c-42.3-2.9-64.4 13.3-97.1 12.1' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-947.8 295.5c-4.8-14.3-18-11.5-15.6.9 14 43.4 18 67.5 19.8 70.9 10.8 18.2 18.4 13.4 19-2.5.2-4.8-14.1-43.5-23.2-69.3' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-990.5 324.5c-8.4-1.3-7.6 9.1-3.3 11.3 59.8 26.5 123.8-8.9 178-5.7 2 .4 5.3 1.6 8.2 3.2 9.6 5 3.8 19.5-1 22.5-21.5 9.8-16.4 0-40.6 11.2-2.3 1.5-8.3 2.6-10.5 1.7-9-3-16.3-8-22.1-12.6l-11.2 5.6c6.9 8.6 17 12.7 25.5 16.4 6.8 3.2 14.1 2.8 19 3 25.1.3 48.6-9.3 60.4-10.8 3.5-.5 7.5-6.5 9-9.3 9.8-15.9 5.8-18.6-1-35.2-3.8-6.2-15-8-20.8-8.8-60.7-2.5-138.3 18.8-189.6 7.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M146.5 677.4c.6-9.2-36.8-18-33.2-4.2 18 62-5.5 79.4-66.8 100.8-4.1 1.2-5.2 9.3 1.9 7.1 64.5-20 103.8-24.6 98.1-103.7' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3Cpath d='M121.6 718.7c-5.9-2.3-11-5.5-14.4-10.6-.6-1-2.2-8.7 2-9.2 16.2-1.7 7.2-6.6 10.7-7.3 21.6-4.5 52.3-17.6 71.6-22.7 10.8-2.9 17.9-11 21.3-10 12.2-1 13.7 25.6 5.8 27.6-31 4.5-48.7 2.6-79.8 11.4z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3Cpath d='M165.4 679.7c.6-10.2-8.3-6.9-11 3.2 3.2 28.8-18.6 73.6 6 102 11.2 13.1 72.4 13.3 84.3 4.7 17-14.5 7.9-28.3-2.4-27.8-19.3 1.4-19.4-50.1-27.5-49-8.7 1.7.6 48.9-6.4 54.2-11.3 8.4-30.8-3.7-36.2-11.1-14.8-20.3-3.4-56.3-6.8-76.2' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3C/svg%3E",
@@ -1092,7 +1079,6 @@ function render(){
   renderActionBar();
   assertConservation();
 }
-/* ======================= オーバーレイ/結果 ======================= */
 function overlayOpen(html,fixed,cls){
   const ov=document.getElementById("overlay"), box=document.getElementById("ovBox");
   if(box.classList){box.classList.toggle("fixed",!!fixed);box.classList.toggle("confirm",cls==="confirm");}
@@ -1223,7 +1209,6 @@ async function showAchievements(){
     if(v2===1){ unlocked=new Set(); saveAchv(); toast("実績を消去いたしましたわ"); }
   }
 }
-/* ======================= 起動 ======================= */
 if(typeof document!=="undefined"&&typeof window!=="undefined"){
   window.addEventListener("load",async()=>{
     await loadAchv();
