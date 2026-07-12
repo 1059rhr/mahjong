@@ -216,7 +216,7 @@ h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-siz
       <div id="doraRow"></div>
     </div>
   </div>
-  <div class="river" id="pRiver"><div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡13枚から不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div></div>
+  <div class="river" id="pRiver"><div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div></div>
   <div class="melds" id="pMelds"></div>
   <div class="pbar" id="pBar"></div>
   <div id="pHand"></div>
@@ -1059,7 +1059,7 @@ function render(){
   document.getElementById("cpuRiver").innerHTML=riverHTML(1);
   if(G.discardCounts&&(G.discardCounts[0]+G.discardCounts[1])>0)introActive=false;
   const showIntro=introActive&&G.discardCounts&&G.discardCounts[0]===0&&G.discardCounts[1]===0;
-  document.getElementById("pRiver").innerHTML=(showIntro?'<div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡13枚から不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div>':"")+riverHTML(0);
+  document.getElementById("pRiver").innerHTML=(showIntro?'<div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div>':"")+riverHTML(0);
   const _app=document.getElementById("app");
   if(_app)_app.classList.toggle("intro",showIntro);
   const cpu=G.players[1], me=G.players[0];
