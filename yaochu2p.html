@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ヤオチュー麻雀</title>
+<style>
+:root{
+  --felt:#173f31; --felt2:#0f2d22; --line:#2b5a47;
+  --ivory:#f7f3e6; --ivory2:#e9e2cd; --ink:#1c1a16;
+  --man:#b03030; --pin:#1d55a8; --sou:#1e7a3c;
+  --gold:#d8b25a; --accent:#e8c977; --warn:#e07a5f;
+  --htw:min(34px,calc((min(100vw,520px) - 52px)/14));
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--felt2);color:var(--ivory);
+  font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+#app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+  background:
+   radial-gradient(120% 60% at 50% 0%,rgba(255,255,255,.05),transparent 60%),
+   var(--felt);
+  padding:6px 8px calc(10px + env(safe-area-inset-bottom))}
+.pbar{display:flex;align-items:center;gap:8px;padding:4px 6px;font-size:13px}
+.pbar .nm{font-weight:700}
+.pbar .wind{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
+  border-radius:4px;background:var(--felt2);border:1px solid var(--line);font-size:12px}
+.pbar .wind.dealer{background:var(--warn);color:#fff;border-color:transparent}
+.pbar .sc{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
+.pbar .sc.minus{color:var(--warn)}
+.badge{font-size:10px;padding:2px 6px;border-radius:3px;background:var(--gold);color:#3a2c0a;font-weight:700}
+.badge.ft{background:var(--warn);color:#fff}
+.river{display:flex;flex-wrap:wrap;gap:0;justify-content:flex-start;align-items:flex-end;
+  align-content:flex-start;height:103px;padding:2px 0;width:156px;margin:0 auto}
+.melds{display:flex;gap:8px;justify-content:flex-end;min-height:0;padding:0 4px;flex-wrap:wrap}
+#pMelds{min-height:41px;align-items:flex-end}
+#cpuMelds{min-height:49px;align-items:flex-end}
+.meld{display:flex;gap:1px;align-items:flex-end}
+.tile{width:34px;height:46px;border-radius:5px;background:linear-gradient(180deg,#fffdf4,var(--ivory) 55%,var(--ivory2));
+  border:1px solid #b9ae8e;box-shadow:0 2px 0 #a99e7f,0 3px 4px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--ink);line-height:1;position:relative;flex:none}
+.tile .face{width:92%;height:92%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none;display:block}
+a.iconbtn{text-decoration:none;display:inline-flex;align-items:center}
+.tile .n{font-size:17px;font-weight:800}
+.tile .s{font-size:11px;font-weight:700;margin-top:1px}
+.tile .z{font-size:19px;font-weight:800}
+.tile.m .n,.tile.m .s{color:var(--man)}
+.tile.p .n,.tile.p .s{color:var(--pin)}
+.tile.s .n,.tile.s .s{color:var(--sou)}
+.tile.zw .z{color:#2a2a2a}
+.tile.zd-h .z{color:#9a9a8c}
+.tile.zd-g .z{color:var(--sou)}
+.tile.zd-r .z{color:var(--man)}
+.tile.sm{width:30px;height:41px}
+.tile.sm .n{font-size:15px}.tile.sm .z{font-size:16px}.tile.sm .s{font-size:10px}
+.tile.xs{width:24px;height:33px;border-radius:4px}
+.tile.xs .n{font-size:12px}.tile.xs .z{font-size:13px}.tile.xs .s{font-size:8px}
+.tile.xxs{width:20px;height:27px;border-radius:3px}
+.tile.back{background:linear-gradient(180deg,#3f6f58,#2c523f);border-color:#1e3a2d;
+  box-shadow:0 2px 0 #16281f,0 3px 4px rgba(0,0,0,.35)}
+.tile.side{width:46px;height:34px}
+.tile.sm.side{width:41px;height:30px}
+.tile.xs.side{width:33px;height:24px}
+.tile.xxs.side{width:27px;height:20px}
+.tile.side .face{transform:rotate(90deg);width:31px;height:42px}
+.tile.sm.side .face{width:28px;height:38px}
+.tile.xs.side .face{width:22px;height:30px}
+.tile.xxs.side .face{width:18px;height:25px}
+.tile.flip .face{transform:rotate(180deg)}
+.tile.side.flip .face{transform:rotate(270deg)}
+.river .tile.xs.side{margin-top:9px}
+#cpuRiver{transform:rotate(180deg)}
+#cpuRiver .tile{background:linear-gradient(0deg,#fffdf4,var(--ivory) 55%,var(--ivory2));box-shadow:0 -2px 0 #a99e7f,0 -3px 4px rgba(0,0,0,.35)}
+.kstack{display:flex;flex-direction:column;gap:1px;justify-content:flex-end}
+.tile.called{opacity:.35}
+.tile.win{outline:3px solid var(--accent);outline-offset:-1px}
+button.tileBtn{padding:0;margin:0;border:none;background:none;font:inherit}
+#pHand{display:flex;gap:2px;justify-content:flex-start;align-items:flex-end;flex-wrap:nowrap;
+  padding:8px 2px 4px;min-height:64px}
+#pHand .tile{width:var(--htw);height:calc(var(--htw)*1.36)}
+#pHand .drawnGap{margin-left:6px;flex:none}
+#pHand .tile.sel{transform:translateY(-8px)}
+#pHand .tile.dim{opacity:.35}
+#center{width:330px;max-width:100%;margin:2px auto;padding:8px 12px;border:1px solid var(--line);border-radius:10px;
+  background:rgba(0,0,0,.22);display:flex;flex-direction:column;gap:6px}
+#center .row1{display:flex;align-items:center;gap:14px;font-size:13px;justify-content:center;white-space:nowrap}
+#center .rname{font-size:16px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
+#center .kv{opacity:.9;font-variant-numeric:tabular-nums;white-space:nowrap}
+#center .spacer{margin-left:auto;display:flex;gap:6px}
+#center .row2{display:flex;align-items:center;gap:8px;justify-content:center}
+#doraRow{display:flex;gap:0}
+#doraRow .tile{width:24px;height:33px;flex:none}
+#center .lbl{font-size:10px;opacity:.75;letter-spacing:.1em}
+header{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px}
+#hdrBtns{display:flex;gap:6px}
+#hdrBtns button{background:none;border:1px solid rgba(236,223,180,.4);color:var(--ivory);border-radius:999px;font-size:11px;padding:5px 12px;letter-spacing:.05em;cursor:pointer}
+h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-size:17px;font-weight:600;letter-spacing:.18em;color:var(--ivory);margin:0}
+#home{background:none;border:1px solid rgba(236,223,180,.4);color:var(--ivory);border-radius:999px;font-size:11px;padding:5px 12px;letter-spacing:.05em;cursor:pointer}
+.iconbtn{font-size:11px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);
+  background:var(--felt2);color:var(--ivory);font-weight:700}
+#actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:52px;
+  align-items:center;padding:6px 0 2px}
+#actions .btn{font-size:16px;font-weight:800;padding:11px 18px;border-radius:9px;border:none;
+  color:#241c08;background:linear-gradient(180deg,#f0d78c,var(--gold));
+  box-shadow:0 3px 0 #a8862f,0 4px 8px rgba(0,0,0,.4)}
+#actions .btn:active{transform:translateY(2px);box-shadow:0 1px 0 #a8862f}
+#actions .btn.sub{background:linear-gradient(180deg,#4c7a63,#38604c);color:var(--ivory);box-shadow:0 3px 0 #24402f}
+#actions .hint{font-size:12px;opacity:.85}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;
+  justify-content:center;z-index:40;padding:14px}
+#overlay[hidden]{display:none}
+#ovBox{background:#20463a;border:1px solid var(--line);border-radius:14px;max-width:480px;width:100%;
+  max-height:86dvh;overflow-y:auto;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#ovBox h2{margin:0 0 8px;font-size:18px;letter-spacing:.06em}
+#introHint{position:absolute;left:50%;top:0;transform:translateX(-50%);width:300px;max-width:92vw;border:1px dashed rgba(236,223,180,.4);border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.9;color:rgba(239,233,214,.85);background:rgba(0,0,0,.28);box-sizing:border-box;pointer-events:none;z-index:3}
+#pRiver{position:relative}
+#app:not(.intro) #introHint{display:none}
+#ovBox.fixed{height:min(540px,86dvh);display:flex;flex-direction:column;overflow:hidden}
+#ovBox.fixed .ylist{flex:1 1 auto;min-height:0;overflow-y:auto;margin-top:4px}
+#ovBox.fixed .rfoot{flex:none;display:flex;flex-direction:column;margin-top:6px}
+#ovBox .rfoot .rtotal{height:96px;display:flex;flex-direction:column;justify-content:center}
+#ovBox .rfoot .rtotal .total{margin:0}
+#ovBox .rfoot .rscore{height:52px}
+#ovBox .rfoot .rbtn{height:62px;display:flex;align-items:flex-end;justify-content:center}
+#ovBox .ylist{display:flex;gap:14px;align-items:flex-start}
+#ovBox .ylist .ycol{flex:1 1 0;min-width:0}
+#ovBox .yline{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;
+  border-bottom:1px dashed rgba(255,255,255,.12)}
+#ovBox .total{font-size:20px;font-weight:800;text-align:center;margin:12px 0 4px;color:var(--accent)}
+#ovBox .handrow{display:flex;gap:2px;flex-wrap:wrap;margin:8px 0;align-items:center}
+#ovBox .obtns{display:flex;gap:10px;justify-content:center;margin-top:14px}
+#ovBox .obtns .btn{font-size:15px;font-weight:800;padding:10px 20px;border-radius:9px;border:none;
+  color:#241c08;background:linear-gradient(180deg,#f0d78c,var(--gold))}
+#ovBox .obtns .btn.sub{background:#38604c;color:var(--ivory)}
+.achGrid{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.ach{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:8px;
+  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.07);font-size:13px}
+.ach .mk{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;
+  justify-content:center;font-size:13px;background:#173226;color:#5d806f}
+.ach.on{border-color:var(--gold);background:rgba(216,178,90,.12)}
+.ach.on .mk{background:var(--gold);color:#3a2c0a}
+.ach .an{font-weight:700}
+.ach .ad{opacity:.7;font-size:11px;margin-left:auto;text-align:right}
+#toasts{position:fixed;left:0;right:0;top:10px;display:flex;flex-direction:column;gap:6px;
+  align-items:center;z-index:60;pointer-events:none}
+.toast{background:linear-gradient(180deg,#f0d78c,var(--gold));color:#3a2c0a;font-weight:800;
+  padding:9px 16px;border-radius:24px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.5);
+  animation:tin .25s ease-out}
+@keyframes tin{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+.callout{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  z-index:55;pointer-events:none}
+.callout.top{align-items:flex-start;padding-top:14dvh}
+.callout.bottom{align-items:flex-end;padding-bottom:28dvh}
+.callout span{font-size:60px;font-weight:900;color:var(--accent);
+  -webkit-text-stroke:2px #2a1f06;letter-spacing:.12em;
+  text-shadow:0 6px 30px rgba(0,0,0,.7);
+  animation:coPop .95s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes coPop{0%{transform:scale(.25);opacity:0}22%{transform:scale(1.18);opacity:1}
+  38%{transform:scale(1)}78%{opacity:1}100%{opacity:0}}
+#ovBox .yline{animation:lineIn .25s ease-out both}
+@keyframes lineIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#ovBox .total .sub{display:block;font-size:13px;font-weight:700;color:#8fae9c;margin-bottom:2px}
+#ovBox .total .pts{font-size:32px;font-weight:900;color:var(--accent);display:inline-block}
+#ovBox .total.t1 .pts{animation:ptsIn .55s cubic-bezier(.2,1.6,.4,1)}
+#ovBox .total.t2 .pts{font-size:34px;animation:ptsIn .55s cubic-bezier(.2,1.6,.4,1),ptsGlow 1.6s ease-in-out .6s infinite}
+#ovBox .total.t3 .pts{font-size:36px;animation:ptsIn .6s cubic-bezier(.2,1.7,.4,1),ptsGlow 1.1s ease-in-out .6s infinite}
+#ovBox .total.t4 .pts{font-size:38px;animation:ptsIn .65s cubic-bezier(.2,1.8,.4,1),ptsGlow .85s ease-in-out .7s infinite,ptsShake 2.4s ease-in-out .9s infinite}
+#ovBox .total.t5 .pts{font-size:41px;text-shadow:0 0 14px rgba(255,205,90,.9);animation:ptsIn .7s cubic-bezier(.2,1.9,.4,1),ptsHue 1.8s linear .8s infinite}
+#ovBox .total.t6 .pts{font-size:44px;text-shadow:0 0 18px rgba(255,140,140,.95);animation:ptsIn .7s cubic-bezier(.2,2,.4,1),ptsHue .9s linear .8s infinite}
+@keyframes ptsIn{0%{transform:scale(.3);opacity:0}55%{transform:scale(1.35)}80%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
+@keyframes ptsGlow{0%,100%{text-shadow:0 0 4px rgba(255,205,90,.3)}50%{text-shadow:0 0 16px rgba(255,205,90,.95)}}
+@keyframes ptsShake{0%,86%,100%{transform:none}89%{transform:translateX(-2px)}93%{transform:translateX(2px)}97%{transform:translateX(-1px)}}
+@keyframes ptsHue{0%{filter:hue-rotate(0)}100%{filter:hue-rotate(360deg)}}
+#ovBox .total .sub2{font-size:12px;font-weight:700;color:#8fae9c;margin-left:8px}
+.stick{display:inline-block;width:34px;height:7px;border-radius:4px;background:var(--ivory);
+  position:relative;vertical-align:middle}
+.stick::after{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;
+  border-radius:50%;background:var(--man)}
+.turnDot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;
+  box-shadow:0 0 8px var(--accent)}
+.turnDot.off{background:transparent;box-shadow:none;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>ヤオチュー麻雀</h1>
+    <div id="hdrBtns">
+      <button id="newBtn" type="button">新規</button>
+      <button id="achBtn" type="button">実績</button>
+      <button id="homeBtn" type="button">⌂ トップへ</button>
+    </div>
+  </header>
+  <div class="pbar" id="cpuBar"></div>
+  <div class="melds" id="cpuMelds"></div>
+  <div class="river" id="cpuRiver"></div>
+  <div id="center">
+    <div class="row1">
+      <span class="rname" id="roundName"></span>
+      <span class="kv" id="honbaPot"></span>
+      <span class="kv" id="wallCnt"></span>
+    </div>
+    <div class="row2">
+      <span class="lbl">ドラ</span>
+      <div id="doraRow"></div>
+    </div>
+  </div>
+  <div class="river" id="pRiver"><div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡13枚から不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div></div>
+  <div class="melds" id="pMelds"></div>
+  <div class="pbar" id="pBar"></div>
+  <div id="pHand"></div>
+  <div id="actions"></div>
+</div>
+<div id="overlay" hidden><div id="ovBox"></div></div>
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ============================ ENGINE_START ============================ */
+/* 牌ID: 0:1萬 1:9萬 2:1筒 3:9筒 4:1索 5:9索 6:東 7:南 8:西 9:北 10:白 11:發 12:中 */
+const TT=[
+ {n:"1",s:"萬",c:"m"},{n:"9",s:"萬",c:"m"},
+ {n:"1",s:"筒",c:"p"},{n:"9",s:"筒",c:"p"},
+ {n:"1",s:"索",c:"s"},{n:"9",s:"索",c:"s"},
+ {z:"東",c:"zw"},{z:"南",c:"zw"},{z:"西",c:"zw"},{z:"北",c:"zw"},
+ {z:"白",c:"zd-h"},{z:"發",c:"zd-g"},{z:"中",c:"zd-r"}
+];
+const DRAGONS=[10,11,12],WINDS=[6,7,8,9];
+function doraFromIndicator(i){ if(i<6)return i^1; if(i<10)return i===9?6:i+1; return i===12?10:i+1; }
+function emptyCounts(){ return new Array(13).fill(0); }
+function countsOf(arr){ const c=emptyCounts(); for(const t of arr)c[t]++; return c; }
+function winStd(c,m){ let pair=0,sets=0;
+  for(let t=0;t<13;t++){ const v=c[t]; if(v===0)continue;
+    if(v===2)pair++; else if(v===3)sets++; else return false; }
+  return pair===1&&sets===(4-m); }
+function winChiitoi(c,m){ if(m>0)return false; let p=0;
+  for(let t=0;t<13;t++){ if(c[t]===2)p++; else if(c[t]!==0)return false; }
+  return p===7; }
+function winKokushi(c,m){ if(m>0)return false; let sum=0;
+  for(let t=0;t<13;t++){ if(c[t]<1)return false; sum+=c[t]; }
+  return sum===14; }
+function winAny(c,m){ return winStd(c,m)||winChiitoi(c,m)||winKokushi(c,m); }
+function shantenStd(c,m){ let S=m,P=0;
+  for(let t=0;t<13;t++){ if(c[t]>=3)S++; else if(c[t]===2)P++; }
+  if(S>4){P+=0;S=4;}
+  const need=4-S,pfs=Math.min(P,need),headPair=P>pfs?1:0;
+  return (need-pfs)*2+pfs+(headPair?0:1)-1; }
+function shantenChiitoi(c,m){ if(m>0)return 99; let p=0,k=0;
+  for(let t=0;t<13;t++){ if(c[t]>=1)k++; if(c[t]>=2)p++; }
+  return 6-p+Math.max(0,7-k); }
+function shantenKokushi(c,m){ if(m>0)return 99; let k=0,pr=0;
+  for(let t=0;t<13;t++){ if(c[t]>=1)k++; if(c[t]>=2)pr=1; }
+  return 13-k-pr; }
+function shanten(c,m){ return Math.min(shantenStd(c,m),shantenChiitoi(c,m),shantenKokushi(c,m)); }
+function waitsOf(c,m){ const w=[];
+  for(let t=0;t<13;t++){ if(c[t]>=4)continue; c[t]++; if(winAny(c,m))w.push(t); c[t]--; }
+  return w; }
+function fuOf(w){
+  if(w.chiitoi)return 25;
+  let fu=20;
+  for(const md of w.melds){ fu+= md.type==="pon"?4 : md.type==="ankan"?32 : 16; }
+  for(const t of w.tripletTypes){ fu+= (t===w.ronTriplet)?4:8; }
+  const pt=w.pairType;
+  if(pt>=10)fu+=2;
+  if(pt===w.seatWind)fu+=2;
+  if(pt===w.roundWind)fu+=2;
+  if(w.waitType==="tanki")fu+=2;
+  if(w.tsumo)fu+=2; else if(w.menzen)fu+=10;
+  return Math.ceil(fu/10)*10;
+}
+function basePoints(han,fu,yn){
+  if(yn>0)return 8000*yn;
+  if(han>=13)return 8000;
+  if(han>=11)return 6000;
+  if(han>=8)return 4000;
+  if(han>=6)return 3000;
+  if(han>=5)return 2000;
+  const b=fu*Math.pow(2,2+han); return b>=1920?2000:b;
+}
+function winPoints(han,fu,yn,isDealer){
+  return Math.ceil(basePoints(han,fu,yn)*(isDealer?6:4)/100)*100;
+}
+function limitName(han,fu,yn){
+  if(yn>=2)return yn+"倍役満"; if(yn===1)return "役満";
+  if(han>=13)return "数え役満"; if(han>=11)return "三倍満";
+  if(han>=8)return "倍満"; if(han>=6)return "跳満";
+  if(han>=5||basePoints(han,fu,0)>=2000)return "満貫";
+  return "";
+}
+/* 和了解析: o={counts14,melds,winTile,tsumo,riichi,doubleRiichi,ippatsu,
+   seatWind,roundWind,haitei,houtei,rinshan,chankan,tenhou,chihou,doraTiles,uraTiles} */
+function analyzeWin(o){
+  const c=o.counts14,m=o.melds.length;
+  const chii=winChiitoi(c,m),kok=winKokushi(c,m),std=winStd(c,m);
+  if(!chii&&!kok&&!std)return null;
+  const menzen=o.melds.every(x=>x.type==="ankan");
+  const pre=c.slice(); pre[o.winTile]--;
+  const waitType= kok ? (pre.every(x=>x>=1)?"kokushi13":"kokushi")
+                      : (pre[o.winTile]===1?"tanki":"shanpon");
+  let tripletTypes=[],pairType=-1;
+  if(std){ for(let t=0;t<13;t++){ if(c[t]===3)tripletTypes.push(t); else if(c[t]===2)pairType=t; } }
+  const meldTiles=o.melds.map(x=>x.tile);
+  const setTypes=tripletTypes.concat(meldTiles);
+  const kans=o.melds.filter(x=>x.type!=="pon").length;
+  const ronTriplet=(!o.tsumo&&std&&waitType==="shanpon")?o.winTile:-1;
+  const ankoCount=o.melds.filter(x=>x.type==="ankan").length
+                 +tripletTypes.filter(t=>t!==ronTriplet).length;
+  const all=c.slice();
+  for(const md of o.melds)all[md.tile]+= md.type==="pon"?3:4;
+  let honors=0; const suitSet=new Set();
+  for(let t=0;t<13;t++){ if(!all[t])continue; if(t>=6)honors+=all[t]; else suitSet.add(t>>1); }
+  const yakuman=[],yaku=[];
+  if(o.tenhou)yakuman.push(["tenhou",1]);
+  if(o.chihou)yakuman.push(["chihou",1]);
+  if(kok)yakuman.push(waitType==="kokushi13"&&!o.furiten?["kokushi13",1]:["kokushi",1]);
+  if((std||chii)&&honors>0&&suitSet.size===0)yakuman.push(["tsuuiisou",1]);
+  if(std){
+    if(suitSet.size>0&&honors===0)yakuman.push(["chinroutou",1]);
+    if(kans===4)yakuman.push(["suukantsu",1]);
+    if(ankoCount===4)yakuman.push(waitType==="tanki"?["suuankou_tanki",1]:["suuankou",1]);
+    const dset=DRAGONS.filter(t=>setTypes.includes(t)).length;
+    if(dset===3)yakuman.push(["daisangen",1]);
+    const wset=WINDS.filter(t=>setTypes.includes(t)).length;
+    if(wset===4)yakuman.push(["daisuushi",1]);
+    else if(wset===3&&WINDS.includes(pairType))yakuman.push(["shousuushi",1]);
+  }
+  const all2=all;
+  let doraHan=0; for(const d of o.doraTiles)doraHan+=all2[d];
+  let uraHan=0; if(o.riichi||o.doubleRiichi){ for(const d of o.uraTiles)uraHan+=all2[d]; }
+  if(yakuman.length){
+    const yn=yakuman.reduce((a,x)=>a+x[1],0);
+    return {yakuman,yakumanN:yn,yaku:[],han:0,fu:0,doraHan:0,uraHan:0,
+            chiitoi:chii,menzen,waitType};
+  }
+  if(o.doubleRiichi)yaku.push(["dbriichi",2]);
+  else if(o.riichi)yaku.push(["riichi",1]);
+  if(o.ippatsu)yaku.push(["ippatsu",1]);
+  if(o.tsumo&&menzen)yaku.push(["tsumo",1]);
+  if(o.rinshan)yaku.push(["rinshan",1]);
+  if(o.chankan)yaku.push(["chankan",1]);
+  if(o.haitei)yaku.push(["haitei",1]);
+  if(o.houtei)yaku.push(["houtei",1]);
+  if(chii)yaku.push(["chiitoi",2]);
+  if(std){
+    yaku.push(["toitoi",2]);
+    if(setTypes.includes(10))yaku.push(["haku",1]);
+    if(setTypes.includes(11))yaku.push(["hatsu",1]);
+    if(setTypes.includes(12))yaku.push(["chun",1]);
+    if(setTypes.includes(o.seatWind))yaku.push(["jikaze",1]);
+    if(setTypes.includes(o.roundWind))yaku.push(["bakaze",1]);
+    if(ankoCount===3)yaku.push(["sanankou",2]);
+    if(kans===3)yaku.push(["sankantsu",2]);
+    if([0,2,4].every(t=>setTypes.includes(t))||[1,3,5].every(t=>setTypes.includes(t)))
+      yaku.push(["sanshokudoukou",2]);
+    const dset=DRAGONS.filter(t=>setTypes.includes(t)).length;
+    if(dset===2&&DRAGONS.includes(pairType))yaku.push(["shousangen",2]);
+  }
+  yaku.push(["honroutou",2]);
+  if(suitSet.size===1&&honors>0)yaku.push(["honitsu",menzen?3:2]);
+  const han=yaku.reduce((a,x)=>a+x[1],0)+doraHan+uraHan;
+  const fu=fuOf({chiitoi:chii,melds:o.melds,tripletTypes,ronTriplet,pairType,
+    seatWind:o.seatWind,roundWind:o.roundWind,waitType,tsumo:o.tsumo,menzen});
+  return {yakuman:[],yakumanN:0,yaku,han,fu,doraHan,uraHan,chiitoi:chii,menzen,waitType};
+}
+/* ============================ ENGINE_END ============================ */
+/* ======================= 永続化アダプタ ======================= */
+const memStore={};
+async function stGet(k){
+  try{ if(typeof window!=="undefined"&&window.storage){
+    const r=await window.storage.get(k);
+    if(r&&r.value!=null)return r.value;
+  }}catch(e){}
+  try{ const v=localStorage.getItem(k); if(v!=null)return v; }catch(e){}
+  return (k in memStore)?memStore[k]:null;
+}
+async function stSet(k,v){
+  memStore[k]=v;
+  try{ if(typeof window!=="undefined"&&window.storage){ await window.storage.set(k,v); } }catch(e){}
+  try{ localStorage.setItem(k,v); }catch(e){}
+}
+/* ======================= 実績 ======================= */
+const ACHV=[
+ ["riichi","立直","リーチをかけて和了"],
+ ["dbriichi","ダブル立直","第一打でリーチして和了"],
+ ["ippatsu","一発","リーチ後1巡以内に和了"],
+ ["tsumo","門前清自摸和","門前でツモ和了"],
+ ["haku","役牌 白","白の刻子で和了"],
+ ["hatsu","役牌 發","發の刻子で和了"],
+ ["chun","役牌 中","中の刻子で和了"],
+ ["jikaze","自風牌","自風の刻子で和了"],
+ ["bakaze","場風牌","場風の刻子で和了"],
+ ["toitoi","対々和","全て刻子で和了"],
+ ["honroutou","混老頭","么九牌のみで和了"],
+ ["chiitoi","七対子","七つの対子で和了"],
+ ["sanankou","三暗刻","暗刻3つで和了"],
+ ["sankantsu","三槓子","カン3回で和了"],
+ ["sanshokudoukou","三色同刻","同数字3色の刻子で和了"],
+ ["shousangen","小三元","三元牌2刻子+三元牌の雀頭"],
+ ["honitsu","混一色","一色+字牌のみで和了"],
+ ["haitei","海底摸月","最後のツモで和了"],
+ ["houtei","河底撈魚","最後の捨て牌でロン"],
+ ["rinshan","嶺上開花","カンの嶺上牌でツモ"],
+ ["chankan","槍槓","加槓の牌でロン"],
+ ["suuankou","四暗刻","役満"],
+ ["suuankou_tanki","四暗刻単騎","役満"],
+ ["daisangen","大三元","役満"],
+ ["tsuuiisou","字一色","役満"],
+ ["chinroutou","清老頭","役満"],
+ ["shousuushi","小四喜","役満"],
+ ["daisuushi","大四喜","役満"],
+ ["suukantsu","四槓子","役満"],
+ ["kokushi","国士無双","役満"],
+ ["kokushi13","国士無双十三面","役満"],
+ ["tenhou","天和","役満"],
+ ["chihou","地和","役満"]
+];
+const YAKU_NAME=Object.fromEntries(ACHV.map(a=>[a[0],a[1]]));
+const ACHV_KEY="yaochu2p_achv";
+let unlocked=new Set();
+async function loadAchv(){
+  try{ const v=await stGet(ACHV_KEY); if(v)unlocked=new Set(JSON.parse(v)); }catch(e){}
+}
+function saveAchv(){ stSet(ACHV_KEY,JSON.stringify(Array.from(unlocked))); }
+function grantAchv(ids){
+  const fresh=ids.filter(id=>YAKU_NAME[id]&&!unlocked.has(id));
+  if(!fresh.length)return;
+  fresh.forEach(id=>unlocked.add(id));
+  saveAchv();
+  fresh.forEach((id,k)=>setTimeout(()=>toast("実績解除ですわ　"+YAKU_NAME[id]),k*500));
+}
+/* ======================= 汎用 ======================= */
+const a2=(a,b)=>a-b;
+let sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function removeN(hand,t,n){
+  for(let i=hand.length-1;i>=0&&n>0;i--){ if(hand[i]===t){hand.splice(i,1);n--;} }
+}
+function tileName(t){ const d=TT[t]; return d.z||(d.n+d.s); }
+/* ======================= 対局状態 ======================= */
+const G={};
+const ROUND_NAMES=["東1局","東2局","南1局","南2局"];
+function dealerIdx(){ return G.round%2; }
+function roundWind(){ return G.round<2?6:7; }
+function seatWind(i){ return i===dealerIdx()?6:7; }
+function isMenzen(p){ return p.melds.every(m=>m.type==="ankan"); }
+function mkP(){ return {hand:[],melds:[],river:[],riichi:false,riichiPending:false,
+  pendingDouble:false,doubleRiichi:false,ippatsu:false,riichiIdx:-1,
+  furitenTemp:false,furitenRiichi:false,drawn:null}; }
+function newGame(){
+  G.scores=[50000,50000]; G.round=0; G.honba=0; G.pot=0; G.over=false;
+  startHand();
+}
+async function startHand(){
+  const deck=[]; for(let t=0;t<13;t++)for(let k=0;k<4;k++)deck.push(t);
+  for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));
+    const tmp=deck[i]; deck[i]=deck[j]; deck[j]=tmp; }
+  G.rinshan=deck.slice(0,4);
+  G.doraInd=[deck[4]];
+  G.uraInd=[deck[5]];
+  G.wall=deck.slice(6);
+  G.doraRevealed=1; G.kans=0; G.pendingDora=0; G.revealCPU=false;
+  G.players=[mkP(),mkP()];
+  const d=dealerIdx();
+  for(let k=0;k<13;k++){ G.players[d].hand.push(G.wall.pop()); G.players[1-d].hand.push(G.wall.pop()); }
+  G.players[0].hand.sort(a2); G.players[1].hand.sort(a2);
+  G.cur=d; G.anyCall=false;
+  G.discardCounts=[0,0]; G.drawCounts=[0,0]; G.lastDiscarder=d;
+  render();
+  await sleep(400);
+  gameLoop();
+}
+async function gameLoop(){
+  while(true){
+    if(G.over)return;
+    if(G.wall.length===0){ await ryuukyoku(); return; }
+    const i=G.cur, p=G.players[i];
+    const tile=G.wall.pop();
+    G.drawCounts[i]++;
+    p.hand.push(tile); p.drawn=tile;
+    const haitei=G.wall.length===0;
+    const res=await turnActions(i,{fromRinshan:false,haitei,allowTsumo:true});
+    if(res==="win")return;
+    G.cur=1-G.lastDiscarder;
+  }
+}
+function tenhouOK(i){ return i===dealerIdx()&&!G.anyCall
+  &&G.discardCounts[0]===0&&G.discardCounts[1]===0
+  &&G.drawCounts[i]===1&&G.players[i].melds.length===0; }
+function chihouOK(i){ return i!==dealerIdx()&&!G.anyCall
+  &&G.drawCounts[i]===1&&G.discardCounts[i]===0&&G.players[i].melds.length===0; }
+async function turnActions(i,ctx){
+  let rinshanFlag=!!ctx.fromRinshan;
+  let haiteiFlag=!!ctx.haitei;
+  let allowTsumo=ctx.allowTsumo!==false;
+  while(true){
+    const p=G.players[i];
+    const c=countsOf(p.hand), m=p.melds.length;
+    const canTsumo=allowTsumo&&winAny(c,m);
+    const kanOpts=kanOptions(i);
+    const canRiichi=!p.riichi&&!p.riichiPending&&isMenzen(p)
+      &&G.wall.length>=1&&riichiDiscards(p).length>0;
+    render();
+    let act;
+    if(i===0){ act=await humanTurn(i,{canTsumo,kanOpts,canRiichi}); }
+    else{ await sleep(550); act=cpuTurn(i,{canTsumo,kanOpts,canRiichi}); }
+    if(act.type==="tsumo"){
+      await settleWin(i,p.drawn,true,{rinshan:rinshanFlag,haitei:haiteiFlag,
+        tenhou:tenhouOK(i),chihou:chihouOK(i)});
+      return "win";
+    }
+    if(act.type==="kan"){
+      const r=await doKan(i,act.opt);
+      if(r==="chankan")return "win";
+      rinshanFlag=true; haiteiFlag=false; allowTsumo=true;
+      continue;
+    }
+    const declRiichi=(act.type==="riichi");
+    await doDiscard(i,act.tile,declRiichi);
+    return await reactions(i,act.tile);
+  }
+}
+function kanOptions(i){
+  const p=G.players[i];
+  if(G.wall.length<3||G.kans>=4)return [];
+  const c=countsOf(p.hand);
+  const opts=[];
+  if(p.riichi){
+    const t=p.drawn;
+    if(t!=null&&c[t]===4){
+      const c1=c.slice(); c1[t]--;
+      const w1=waitsOf(c1,p.melds.length).join(",");
+      const c2=c.slice(); c2[t]=0;
+      const w2=waitsOf(c2,p.melds.length+1).join(",");
+      if(w1.length&&w1===w2)opts.push({kind:"ankan",tile:t});
+    }
+    return opts;
+  }
+  for(let t=0;t<13;t++)if(c[t]===4)opts.push({kind:"ankan",tile:t});
+  for(const md of p.melds)if(md.type==="pon"&&c[md.tile]>=1)opts.push({kind:"kakan",tile:md.tile});
+  return opts;
+}
+function riichiDiscards(p){
+  const res=[]; const m=p.melds.length; const c=countsOf(p.hand);
+  const seen=new Set();
+  for(const t of p.hand){
+    if(seen.has(t))continue; seen.add(t);
+    c[t]--; if(waitsOf(c,m).length>0)res.push(t); c[t]++;
+  }
+  return res;
+}
+function isFuriten(i){
+  const p=G.players[i];
+  if(p.furitenTemp||p.furitenRiichi)return true;
+  const w=waitsOf(countsOf(p.hand),p.melds.length);
+  if(!w.length)return false;
+  const rv=p.river.map(e=>e.t);
+  return w.some(t=>rv.includes(t));
+}
+function revealDora(){ if(G.doraRevealed<G.doraInd.length)G.doraRevealed++; }
+function clearIppatsu(){ for(const p of G.players)p.ippatsu=false; }
+async function doKan(i,opt){
+  const p=G.players[i], opp=1-i, po=G.players[opp];
+  /* 槍槓ウィンドウ: 加槓のみ(全和了形)｡暗槓は不可 */
+  const co=countsOf(po.hand);
+  if(opt.kind==="kakan"&&co[opt.tile]<4){
+    co[opt.tile]++;
+    const isWin=winAny(co,po.melds.length);
+    co[opt.tile]--;
+    if(isWin&&!isFuriten(opp)){
+      let take;
+      if(opp===0){ take=await humanReact({ron:true,ronLabel:"ロン(槍槓)"}); }
+      else take="ron";
+      if(take==="ron"){
+        await settleWin(opp,opt.tile,false,{chankan:true});
+        return "chankan";
+      }
+      po.furitenTemp=true;
+      if(po.riichi)po.furitenRiichi=true;
+      po.everFuriten=true;
+    }
+  }
+  const t=opt.tile;
+  await callout("カン",i);
+  G.doraInd.push(G.wall.shift());
+  G.uraInd.push(G.wall.shift());
+  if(opt.kind==="ankan"){
+    removeN(p.hand,t,4);
+    p.melds.push({type:"ankan",tile:t});
+    revealDora();
+  }else{
+    removeN(p.hand,t,1);
+    const md=p.melds.find(x=>x.type==="pon"&&x.tile===t);
+    md.type="kakan";
+    revealDora();
+  }
+  G.kans++; G.anyCall=true; clearIppatsu();
+  const rt=G.rinshan.pop();
+  p.hand.push(rt); p.drawn=rt;
+  render();
+  await sleep(350);
+  return "ok";
+}
+async function doDiscard(i,tile,riichiDecl){
+  const p=G.players[i];
+  let ix=(p.drawn===tile)?p.hand.lastIndexOf(tile):p.hand.indexOf(tile);
+  if(ix<0)ix=p.hand.indexOf(tile);
+  p.hand.splice(ix,1);
+  p.drawn=null;
+  p.hand.sort(a2);
+  if(riichiDecl){
+    p.riichiPending=true;
+    p.pendingDouble=(G.discardCounts[i]===0&&!G.anyCall);
+    p.riichiIdx=p.river.length;
+  }
+  p.river.push({t:tile,riichi:!!riichiDecl,called:false});
+  {
+    const ws=waitsOf(countsOf(p.hand),p.melds.length);
+    if(ws.some(t=>p.river.some(e=>!e.called&&e.t===t)))p.everFuriten=true;
+  }
+  G.discardCounts[i]++;
+  G.lastDiscarder=i;
+  p.furitenTemp=false;
+  if(p.riichi)p.ippatsu=false;
+  render();
+  if(riichiDecl)await callout("リーチ",i);
+  await sleep(220);
+}
+function establishRiichi(i){
+  const p=G.players[i];
+  if(!p.riichiPending)return;
+  p.riichiPending=false;
+  p.riichi=true;
+  p.doubleRiichi=p.pendingDouble;
+  p.ippatsu=true;
+  G.scores[i]-=1000;
+  G.pot+=1000;
+  render();
+}
+async function reactions(i,tile){
+  const opp=1-i, po=G.players[opp], p=G.players[i];
+  const houtei=(G.wall.length===0);
+  const co=countsOf(po.hand);
+  let canRon=false;
+  if(co[tile]<4){
+    co[tile]++;
+    canRon=winAny(co,po.melds.length);
+    co[tile]--;
+  }
+  if(canRon&&isFuriten(opp))canRon=false;
+  const callsOK=(G.wall.length>0)&&!po.riichi;
+  const canPon=callsOK&&co[tile]>=2;
+  const canKan=callsOK&&G.wall.length>=3&&co[tile]===3&&G.kans<4;
+  let act="pass";
+  if(canRon||canPon||canKan){
+    if(opp===0){ act=await humanReact({ron:canRon,pon:canPon,kan:canKan}); }
+    else{ act=cpuReact(opp,tile,{ron:canRon,pon:canPon,kan:canKan});
+      if(act!=="pass")await sleep(380); }
+  }
+  if(act==="ron"){
+    await settleWin(opp,tile,false,{houtei});
+    return "win";
+  }
+  if(canRon){
+    po.furitenTemp=true;
+    if(po.riichi)po.furitenRiichi=true;
+    po.everFuriten=true;
+  }
+  establishRiichi(i);
+  if(act==="pon"||act==="kan"){
+    p.river[p.river.length-1].called=true;
+    G.anyCall=true; clearIppatsu();
+    G.cur=opp;
+    if(act==="pon"){
+      await callout("ポン",opp);
+      removeN(po.hand,tile,2);
+      po.melds.push({type:"pon",tile});
+      render(); await sleep(300);
+      return await turnActions(opp,{allowTsumo:false});
+    }
+    await callout("カン",opp);
+    removeN(po.hand,tile,3);
+    po.melds.push({type:"minkan",tile});
+    G.doraInd.push(G.wall.shift());
+    G.uraInd.push(G.wall.shift());
+    revealDora(); G.kans++;
+    const rt=G.rinshan.pop();
+    po.hand.push(rt); po.drawn=rt;
+    render(); await sleep(300);
+    return await turnActions(opp,{fromRinshan:true,allowTsumo:true});
+  }
+  return "pass";
+}
+async function settleWin(i,winTile,tsumo,flags){
+  await callout(tsumo?"ツモ":"ロン",i);
+  const p=G.players[i];
+  const c=countsOf(p.hand);
+  if(!tsumo)c[winTile]++;
+  const preC=countsOf(p.hand); if(tsumo)preC[winTile]--;
+  const wv=waitsOf(preC,p.melds.length);
+  const wasFuriten=!!(p.everFuriten||p.furitenTemp||p.furitenRiichi||wv.some(t=>p.river.some(e=>!e.called&&e.t===t)));
+  const doraTiles=G.doraInd.slice(0,G.doraRevealed).map(doraFromIndicator);
+  const uraTiles=p.riichi?G.uraInd.slice(0,G.doraRevealed).map(doraFromIndicator):[];
+  const res=analyzeWin({
+    counts14:c, melds:p.melds, winTile, tsumo,
+    riichi:p.riichi&&!p.doubleRiichi, doubleRiichi:p.doubleRiichi,
+    ippatsu:p.ippatsu,
+    seatWind:seatWind(i), roundWind:roundWind(),
+    haitei:!!flags.haitei, houtei:!!flags.houtei,
+    rinshan:!!flags.rinshan, chankan:!!flags.chankan,
+    tenhou:!!flags.tenhou, chihou:!!flags.chihou,
+    doraTiles, uraTiles, furiten:wasFuriten
+  });
+  if(!res){ console.error("和了解析不能"); return; }
+  if(i===1)G.revealCPU=true;
+  const isD=(i===dealerIdx());
+  const honbaWas=G.honba;
+  const ptsBase=winPoints(res.han,res.fu,res.yakumanN,isD);
+  const pts=ptsBase+honbaWas*300;
+  const potWas=G.pot;
+  G.scores[i]+=pts+potWas;
+  G.scores[1-i]-=pts;
+  G.pot=0;
+  if(i===0){
+    const ids=res.yakumanN?res.yakuman.map(x=>x[0]):res.yaku.map(x=>x[0]);
+    grantAchv(ids);
+  }
+  render();
+  const endNow=(G.round===3)&&(!isD||G.scores[i]>G.scores[1-i]);
+  await showResult(i,winTile,tsumo,res,ptsBase,honbaWas,potWas,endNow);
+  if(G.over)return;
+  if(endNow){ await gameEnd(); return; }
+  if(isD){ G.honba++; }
+  else{ G.round++; G.honba=0; }
+  if(G.round>3){ await gameEnd(); return; }
+  startHand();
+}
+async function ryuukyoku(){
+  const ten=[0,1].map(i=>waitsOf(countsOf(G.players[i].hand),G.players[i].melds.length).length>0);
+  if(ten[1])G.revealCPU=true;
+  let h="<h2>流局ですわ…</h2>";
+  for(const i of [0,1]){
+    h+='<div class="yline"><span>'+(i===0?"お嬢様":"CPU")+"</span><span>"
+      +(ten[i]?"聴牌ですわ":"ノーテンですの…")+"</span></div>";
+    if(ten[i]){
+      const p=G.players[i];
+      const sz=(i===1)?"xs flip":"xs";
+      let row=p.hand.slice().sort(a2).map(t=>tileHTML(t,sz)).join("");
+      for(const md of p.melds)row+='<span style="width:8px;display:inline-block"></span>'+meldHTML(md,sz);
+      h+='<div class="handrow">'+row+"</div>";
+    }
+  }
+  if(ten[0]!==ten[1]){
+    const w=ten[0]?0:1;
+    G.scores[w]+=1000; G.scores[1-w]-=1000;
+    h+='<div class="yline"><span>ノーテン罰符</span><span>1000点</span></div>';
+  }
+  render();
+  if(G.pot>0)h+='<div class="yline"><span>供託</span><span>'+G.pot+'点 持ち越しですわ</span></div>';
+  await showOverlay(h,[{label:"次局へ参りますわ",val:1}]);
+  G.honba++;
+  if(G.round>3){ await gameEnd(); return; }
+  startHand();
+}
+async function gameEnd(){
+  G.over=true;
+  if(G.pot>0){
+    if(G.scores[0]>G.scores[1])G.scores[0]+=G.pot;
+    else if(G.scores[1]>G.scores[0])G.scores[1]+=G.pot;
+    else{ G.scores[0]+=G.pot/2; G.scores[1]+=G.pot/2; }
+    G.pot=0;
+  }
+  const a=G.scores[0], b=G.scores[1];
+  const ttl=a>b?"お嬢様の勝利ですわ！":(a<b?"CPUの勝利ですわ…":"引き分けですわ");
+  let h='<h2>終局ですわ</h2><div class="total">'+ttl+"</div>";
+  h+='<div class="yline"><span>お嬢様</span><span>'+a+"点</span></div>";
+  h+='<div class="yline"><span>CPU</span><span>'+b+"点</span></div>";
+  render();
+  await showOverlay(h,[{label:"もう一局ですわ",val:1}]);
+  newGame();
+}
+/* ======================= CPU ======================= */
+function visibleRemain(t,i){
+  let seen=countsOf(G.players[i].hand)[t];
+  for(const pl of G.players){
+    for(const e of pl.river)if(!e.called&&e.t===t)seen++;
+    for(const md of pl.melds)if(md.tile===t)seen+=(md.type==="pon"?3:4);
+  }
+  for(let k=0;k<G.doraRevealed;k++)if(G.doraInd[k]===t)seen++;
+  return Math.max(0,4-seen);
+}
+function cpuBestDiscard(i){
+  const p=G.players[i], m=p.melds.length;
+  const opp=G.players[1-i];
+  const c=countsOf(p.hand);
+  const list=[];
+  for(const t of new Set(p.hand)){
+    c[t]--;
+    const sh=shanten(c,m);
+    let uke=0;
+    for(let u=0;u<13;u++){
+      if(c[u]>=4)continue;
+      c[u]++;
+      if(shanten(c,m)<sh)uke+=visibleRemain(u,i);
+      c[u]--;
+    }
+    c[t]++;
+    list.push({t,sh,uke,gen:opp.river.some(e=>e.t===t)?1:0});
+  }
+  let shNow=99; for(const x of list)if(x.sh<shNow)shNow=x.sh;
+  const fold=opp.riichi&&shNow>=2;
+  list.sort((A,B)=>{
+    if(fold&&A.gen!==B.gen)return B.gen-A.gen;
+    if(A.sh!==B.sh)return A.sh-B.sh;
+    if(opp.riichi&&A.gen!==B.gen)return B.gen-A.gen;
+    return B.uke-A.uke;
+  });
+  return list[0].t;
+}
+function cpuTurn(i,o){
+  const p=G.players[i];
+  if(o.canTsumo)return {type:"tsumo"};
+  if(p.riichi){
+    if(o.kanOpts.length)return {type:"kan",opt:o.kanOpts[0]};
+    return {type:"discard",tile:p.drawn};
+  }
+  const opp=G.players[1-i];
+  if(!opp.riichi){
+    for(const opt of o.kanOpts){
+      const c=countsOf(p.hand), m=p.melds.length;
+      let shNow=99;
+      for(const t of new Set(p.hand)){ c[t]--; const s=shanten(c,m); if(s<shNow)shNow=s; c[t]++; }
+      const c2=countsOf(p.hand); let m2=m;
+      if(opt.kind==="ankan"){ c2[opt.tile]=0; m2=m+1; } else { c2[opt.tile]--; }
+      if(shanten(c2,m2)<=shNow)return {type:"kan",opt};
+    }
+  }
+  if(o.canRiichi){
+    const c=countsOf(p.hand), m=p.melds.length;
+    const river=p.river.map(e=>e.t);
+    let bestT=-1, bestW=-1;
+    for(const t of riichiDiscards(p)){
+      c[t]--;
+      const w=waitsOf(c,m);
+      const fur=w.some(x=>river.includes(x));
+      let wr=0; for(const x of w)wr+=visibleRemain(x,i);
+      c[t]++;
+      if(!fur&&wr>0&&wr>bestW){ bestW=wr; bestT=t; }
+    }
+    if(bestT>=0)return {type:"riichi",tile:bestT};
+  }
+  return {type:"discard",tile:cpuBestDiscard(i)};
+}
+function cpuReact(i,tile,can){
+  if(can.ron)return "ron";
+  const p=G.players[i], opp=G.players[1-i];
+  const c=countsOf(p.hand), m=p.melds.length;
+  const shNow=shanten(c,m);
+  if(opp.riichi&&shNow>=2)return "pass";
+  if(can.kan){
+    const c2=c.slice(); c2[tile]-=3;
+    if(shanten(c2,m+1)<shNow&&shNow<=2)return "kan";
+  }
+  if(can.pon){
+    const c2=c.slice(); c2[tile]-=2;
+    let best=99;
+    for(let t=0;t<13;t++){
+      if(c2[t]<=0)continue;
+      c2[t]--; const s=shanten(c2,m+1); if(s<best)best=s; c2[t]++;
+    }
+    if(best<shNow)return "pon";
+  }
+  return "pass";
+}
+/* ======================= 入力 ======================= */
+let inputState=null;
+function awaitInput(o){
+  return new Promise(res=>{
+    inputState={tiles:o.tiles||null,buttons:o.buttons||[],hint:o.hint||"",resolve:res};
+    render();
+  });
+}
+function tileTap(t){
+  if(!inputState||!inputState.tiles)return;
+  if(inputState.tiles!=="all"&&!inputState.tiles.has(t))return;
+  const r=inputState; inputState=null;
+  r.resolve({type:"tile",tile:t});
+}
+async function humanTurn(i,o){
+  const p=G.players[i];
+  if(p.riichi){
+    if(o.canTsumo){
+      const v=await awaitInput({buttons:[{label:"ツモ",val:{type:"tsumo"}}]});
+      return v;
+    }
+    if(o.kanOpts.length){
+      const v=await awaitInput({buttons:[
+        {label:"カン",val:{type:"kan",opt:o.kanOpts[0]}},
+        {label:"ツモ切り",val:{type:"discard",tile:p.drawn},cls:"sub"}]});
+      return v;
+    }
+    render();
+    await sleep(500);
+    return {type:"discard",tile:p.drawn};
+  }
+  while(true){
+    const buttons=[];
+    if(o.canTsumo)buttons.push({label:"ツモ",val:{type:"tsumo"}});
+    if(o.canRiichi)buttons.push({label:"リーチ",val:{type:"riichiMode"}});
+    if(o.kanOpts.length)buttons.push({label:"カン",val:{type:"kanMode"}});
+    const v=await awaitInput({tiles:"all",buttons});
+    if(v.type==="tile")return {type:"discard",tile:v.tile};
+    if(v.type==="tsumo")return v;
+    if(v.type==="riichiMode"){
+      const ok=new Set(riichiDiscards(p));
+      const v2=await awaitInput({tiles:ok,hint:"リーチ　お捨てになる牌をどうぞ",
+        buttons:[{label:"やめますわ",val:{type:"cancel"},cls:"sub"}]});
+      if(v2.type==="tile")return {type:"riichi",tile:v2.tile};
+      continue;
+    }
+    if(v.type==="kanMode"){
+      if(o.kanOpts.length===1)return {type:"kan",opt:o.kanOpts[0]};
+      const btns=o.kanOpts.map(op=>({
+        label:(op.kind==="ankan"?"暗槓 ":"加槓 ")+tileName(op.tile),
+        val:{type:"kan",opt:op}}));
+      btns.push({label:"やめますわ",val:{type:"cancel"},cls:"sub"});
+      const v2=await awaitInput({buttons:btns});
+      if(v2.type&&v2.type==="kan")return v2;
+      continue;
+    }
+  }
+}
+async function humanReact(can){
+  const buttons=[];
+  if(can.ron)buttons.push({label:can.ronLabel||"ロン",val:"ron"});
+  if(can.pon)buttons.push({label:"ポン",val:"pon"});
+  if(can.kan)buttons.push({label:"カン",val:"kan"});
+  buttons.push({label:"スルー",val:"pass",cls:"sub"});
+  return await awaitInput({buttons});
+}
+/* ======================= 描画 ======================= */
+const TILE_IMG=[
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M52.9 722.3c-17.5 0-9 19-1 19.5 56.5 12.3 92.4-11.6 131.5-9.5 20.7 2 53.8 11 61.5 15.6 1.7 1 4 .7 5 .2 8.4-4.4 7.7-25.1 4.4-36.9-1-3.4-8.7-7.7-15 .2-2.2 2.1-11 .7-12.8-.6-8.4-5.7-31.4-11.2-43.5-8-46.3 9.7-82.8 26.5-130.1 19.5' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(0 -652.4)'/%3E%3Cpath d='M-973.9 230.3c101.5 10.8 95-15.7 180-18.5 19-2.8 17.7-17.5-.4-16-90.4 2.2-58.8 34.9-177.7 16-29-5.1-24.2 14.6-1.9 18.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-882.6 187.1c1.3-3.9-8-10.1-13.3-3.4-4.8 7.4-6.2 12.1-10.8 17.4-2 2.4-2.3 7.7-.2 9.3 7.5 6.1 6.7 4.7 11.5 14.7l20.5-1.8c-6.5-8.6-7.6-7.8-10.1-16.4-1.2-9.3-.8-10.2 2.4-19.8m25.8-37.9c-2.1-2.2-3.4-3-6.3 0l-15.3 15.5c-1.4 1.5-1.4 3.7-.3 5l9.2 8.8c4.3 4.3 5.4 7.3 2.9 12.4a97 97 0 0 0-6.1 24.7l21.1-3.5c-4-9.8-3.8-12.4 3-21.7 5.5-6.3 10.8-7.7 5.9-16.4zm22.4 80.3q-3.7.1-8 .7c-26 4.2-44.7 13.7-87.8 12.1-5.9 0-10.8 3.2-10.6 7.6.4 10 7.7 62.2 8.3 67 .9 6.3 9.8 7 11 1.3.2-1 .2-4 0-8q1-1.8 2.4-2.2l57-5.1q.8 0 1.3 1.3c-.5 20.1-.7 39.8-.3 46.6.1 1.6 0 3.2 1.6 4.5 3.6 3 24.1 1.4 29.4-2 1.5-1 2-1.5 2.2-3.7-3-34-.7-77.3 1.6-111 .6-7.4-2.9-9-8.1-9m-27 16.8c5.6-1.4 2 15.8 0 15.9l-58.8 4.6c-5-1-4.8-13-1.4-13.2 26.7-1 35.8-3.2 60.2-7.3m-.1 29.1c1.7 0 2 12.4-.4 12.6l-57.3 4.8c-4.2-1.1-4.4-12-.8-12.5z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-881.5 246.3-19.3.7-5.3 90.5c-.7 10.3 4.5 20.6 11.3 20.8l18.7-6.6z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-942.6 355 .8 8c54.3 18.3 41.6-8.6 96.9-15.2l-.6-5c-42.3-2.9-64.4 13.3-97.1 12.1' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-947.8 295.5c-4.8-14.3-18-11.5-15.6.9 14 43.4 18 67.5 19.8 70.9 10.8 18.2 18.4 13.4 19-2.5.2-4.8-14.1-43.5-23.2-69.3' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-990.5 324.5c-8.4-1.3-7.6 9.1-3.3 11.3 59.8 26.5 123.8-8.9 178-5.7 2 .4 5.3 1.6 8.2 3.2 9.6 5 3.8 19.5-1 22.5-21.5 9.8-16.4 0-40.6 11.2-2.3 1.5-8.3 2.6-10.5 1.7-9-3-16.3-8-22.1-12.6l-11.2 5.6c6.9 8.6 17 12.7 25.5 16.4 6.8 3.2 14.1 2.8 19 3 25.1.3 48.6-9.3 60.4-10.8 3.5-.5 7.5-6.5 9-9.3 9.8-15.9 5.8-18.6-1-35.2-3.8-6.2-15-8-20.8-8.8-60.7-2.5-138.3 18.8-189.6 7.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M-973.9 230.3c101.5 10.8 95-15.7 180-18.5 19-2.8 17.7-17.5-.4-16-90.4 2.2-58.8 34.9-177.7 16-29-5.1-24.2 14.6-1.9 18.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-882.6 187.1c1.3-3.9-8-10.1-13.3-3.4-4.8 7.4-6.2 12.1-10.8 17.4-2 2.4-2.3 7.7-.2 9.3 7.5 6.1 6.7 4.7 11.5 14.7l20.5-1.8c-6.5-8.6-7.6-7.8-10.1-16.4-1.2-9.3-.8-10.2 2.4-19.8m25.8-37.9c-2.1-2.2-3.4-3-6.3 0l-15.3 15.5c-1.4 1.5-1.4 3.7-.3 5l9.2 8.8c4.3 4.3 5.4 7.3 2.9 12.4a97 97 0 0 0-6.1 24.7l21.1-3.5c-4-9.8-3.8-12.4 3-21.7 5.5-6.3 10.8-7.7 5.9-16.4zm22.4 80.3q-3.7.1-8 .7c-26 4.2-44.7 13.7-87.8 12.1-5.9 0-10.8 3.2-10.6 7.6.4 10 7.7 62.2 8.3 67 .9 6.3 9.8 7 11 1.3.2-1 .2-4 0-8q1-1.8 2.4-2.2l57-5.1q.8 0 1.3 1.3c-.5 20.1-.7 39.8-.3 46.6.1 1.6 0 3.2 1.6 4.5 3.6 3 24.1 1.4 29.4-2 1.5-1 2-1.5 2.2-3.7-3-34-.7-77.3 1.6-111 .6-7.4-2.9-9-8.1-9m-27 16.8c5.6-1.4 2 15.8 0 15.9l-58.8 4.6c-5-1-4.8-13-1.4-13.2 26.7-1 35.8-3.2 60.2-7.3m-.1 29.1c1.7 0 2 12.4-.4 12.6l-57.3 4.8c-4.2-1.1-4.4-12-.8-12.5z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-881.5 246.3-19.3.7-5.3 90.5c-.7 10.3 4.5 20.6 11.3 20.8l18.7-6.6z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='m-942.6 355 .8 8c54.3 18.3 41.6-8.6 96.9-15.2l-.6-5c-42.3-2.9-64.4 13.3-97.1 12.1' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-947.8 295.5c-4.8-14.3-18-11.5-15.6.9 14 43.4 18 67.5 19.8 70.9 10.8 18.2 18.4 13.4 19-2.5.2-4.8-14.1-43.5-23.2-69.3' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M-990.5 324.5c-8.4-1.3-7.6 9.1-3.3 11.3 59.8 26.5 123.8-8.9 178-5.7 2 .4 5.3 1.6 8.2 3.2 9.6 5 3.8 19.5-1 22.5-21.5 9.8-16.4 0-40.6 11.2-2.3 1.5-8.3 2.6-10.5 1.7-9-3-16.3-8-22.1-12.6l-11.2 5.6c6.9 8.6 17 12.7 25.5 16.4 6.8 3.2 14.1 2.8 19 3 25.1.3 48.6-9.3 60.4-10.8 3.5-.5 7.5-6.5 9-9.3 9.8-15.9 5.8-18.6-1-35.2-3.8-6.2-15-8-20.8-8.8-60.7-2.5-138.3 18.8-189.6 7.5' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(1034.3 -3.5)'/%3E%3Cpath d='M146.5 677.4c.6-9.2-36.8-18-33.2-4.2 18 62-5.5 79.4-66.8 100.8-4.1 1.2-5.2 9.3 1.9 7.1 64.5-20 103.8-24.6 98.1-103.7' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3Cpath d='M121.6 718.7c-5.9-2.3-11-5.5-14.4-10.6-.6-1-2.2-8.7 2-9.2 16.2-1.7 7.2-6.6 10.7-7.3 21.6-4.5 52.3-17.6 71.6-22.7 10.8-2.9 17.9-11 21.3-10 12.2-1 13.7 25.6 5.8 27.6-31 4.5-48.7 2.6-79.8 11.4z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3Cpath d='M165.4 679.7c.6-10.2-8.3-6.9-11 3.2 3.2 28.8-18.6 73.6 6 102 11.2 13.1 72.4 13.3 84.3 4.7 17-14.5 7.9-28.3-2.4-27.8-19.3 1.4-19.4-50.1-27.5-49-8.7 1.7.6 48.9-6.4 54.2-11.3 8.4-30.8-3.7-36.2-11.1-14.8-20.3-3.4-56.3-6.8-76.2' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-.3 -652.4)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='300' height='400' viewBox='0 0 300 400'%3E%3Cg transform='translate(-207.4 -311.3)scale(.89332)'%3E%3Ccircle cx='400' cy='572.4' r='160' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:%23000;stroke-width:10.03299999;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='400' cy='572.4' r='145' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:%23000037;stroke-width:10.03299999;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cg transform='translate(.4)'%3E%3Cpath id='a' d='M392.3 496.5c-8.2-83 24.1-83 15.3 0' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.95532227;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cg transform='translate(-31 -64.5)'%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(20 230 691.5)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(40 325.5 646.3)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(60 358.7 630.7)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(80 376.4 622.3)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(100 387.9 616.9)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(120 396.4 612.8)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(140 403.4 609.5)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(160 409.5 606.6)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='matrix(-1 0 0 -1 830.6 1207.8)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(200 421 601.2)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(220 427.2 598.3)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(240 434.1 595)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(260 442.7 591)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(-80 454.2 585.5)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(-60 471.9 577.1)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(-40 505 561.4)'/%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='rotate(-20 600.5 516.2)'/%3E%3C/g%3E%3C/g%3E%3Ccircle cx='400' cy='572.4' r='84.5' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:%23000037;stroke-width:10.23999977;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='400' cy='572.4' r='72.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cg id='c' transform='translate(-.2)'%3E%3Cpath d='M401.3 554.2c-3.1-9.9-29.5-32.5-1.2-34 29.4 1.6.9 23.6-1.7 34.2' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:23.10970306;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M400 555.2v-25.7' style='fill:none;fill-rule:evenodd;stroke:%23b93c3c;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='400' cy='527.8' r='4.8' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath id='b' d='m404.7 557.5 6.6-16.1' style='fill:none;fill-rule:evenodd;stroke:%23b93c3c;stroke-width:4;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cuse xlink:href='%23b' width='100%25' height='100%25' transform='matrix(-1 0 0 1 800 0)'/%3E%3C/g%3E%3Ccircle cx='400' cy='572.4' r='16' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:%23b93c3c;stroke-width:6.66957808;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='400' cy='572.4' r='8.5' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cuse xlink:href='%23c' id='d' width='100%25' height='100%25' x='0' y='0' transform='rotate(-72 400 572.4)'/%3E%3Cuse xlink:href='%23d' id='e' width='100%25' height='100%25' x='0' y='0' transform='rotate(-72 400 572.4)'/%3E%3Cuse xlink:href='%23e' id='f' width='100%25' height='100%25' x='0' y='0' transform='rotate(-72 400 572.4)'/%3E%3Cuse xlink:href='%23f' width='100%25' height='100%25' transform='rotate(-72 400 572.4)'/%3E%3C/g%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cg transform='translate(0 -652)'%3E%3Ccircle cx='237.4' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M166.7-716a21.5 21.5 0 0 1-21.1 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='150.1' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M79.4-715.4a21.5 21.5 0 0 1-21.2 21.5 21.5 21.5 0 0 1-21.9-20.7 21.5 21.5 0 0 1 20.3-22.3A21.5 21.5 0 0 1 79.3-717' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='62.8' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M254-716.6a21.5 21.5 0 0 1-21.1 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='237.4' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='translate(0 -378)'%3E%3Ccircle cx='237.4' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M166.7-716a21.5 21.5 0 0 1-21.1 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='150.1' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150.1' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M79.4-715.4a21.5 21.5 0 0 1-21.2 21.5 21.5 21.5 0 0 1-21.9-20.7 21.5 21.5 0 0 1 20.3-22.3A21.5 21.5 0 0 1 79.3-717' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='62.8' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='62.8' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='39.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M254-716.6a21.5 21.5 0 0 1-21.1 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='237.4' cy='715' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.4' cy='715' r='3.7' style='opacity:1;fill:%23000037;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='translate(0 -652)'%3E%3Ccircle cx='63' cy='852.4' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.7' cy='852.4' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150' cy='852.4' r='61.1' style='opacity:1;fill:%23000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150' cy='852.4' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150' cy='852.4' r='39.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M165.7-853.4a21.5 21.5 0 0 1-21.2 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='150' cy='852.4' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='150' cy='852.4' r='3.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='63' cy='852.4' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='63' cy='852.4' r='39.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M78.7-852.8a21.5 21.5 0 0 1-21.1 21.5 21.5 21.5 0 0 1-22-20.7A21.5 21.5 0 0 1 56-874.3a21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='63' cy='852.4' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='63' cy='852.4' r='3.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.7' cy='852.4' r='46.1' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.7' cy='852.4' r='39.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M253.4-854a21.5 21.5 0 0 1-21.2 21.5 21.5 21.5 0 0 1-22-20.7 21.5 21.5 0 0 1 20.4-22.3 21.5 21.5 0 0 1 22.7 19.9' style='opacity:1;fill:none;fill-opacity:.29670332;fill-rule:nonzero;stroke:%23fff;stroke-width:6.75044918;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:13.50089867,13.50089867;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-.4)scale(1 -1)'/%3E%3Ccircle cx='237.7' cy='852.4' r='8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='237.7' cy='852.4' r='3.7' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3C/g%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='300' height='400' viewBox='0 0 300 400'%3E%3Cg transform='matrix(.4669 0 0 .49874 -17.7 -28.3)'%3E%3Cuse xlink:href='%23a' width='100%25' height='100%25' transform='matrix(.97502 -.21583 .22384 .97607 -18.2 80)'/%3E%3Cpath id='a' d='m293 673.9-6.4 58.5c-18.4-1-31.3-7.6-43.7-11.6 7.7 15 21.6 24.4 38.8 33.6l-6.4 41.4c-27.1-4.7-31.5-5.5-52.6-8.5 18.9 7.4 25.5 11.4 38.5 17.7a754 754 0 0 0-60.8 12.2c32.2-1.2 43.3.5 68.5-.4-10.9 8-21.7 10.4-31.5 24.6 26-5.3 46.7-16.7 60.2-23.2 12.4-1.7 21-4.1 39-7.1-7.8-5-21.5-8.4-35.7-11.7l5.4-43.5c25.7-4.2 43.6-16.9 56.5-21.4-19.8 3.7-31.8 1.9-52.5-.3l6.8-59.5z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M205.7 526.5c-27.3-13-34.7-22.2-43.3-31.7-17.9-19.1-35-29.8-55.9-43.1 17.9 15.2 33.4 27.6 48.8 54.2l-49.5-9.3c36.1 12.5 63.5 28.9 82 46.8z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M540 586.6c41.4-19.6 77-43.4 130-56.6-59 22.4-91.2 43.3-120.2 73.6-3.1 6.4.5 12.8 1.7 19.2l-29-50c6.8 7.2 12.1 16 17.4 13.7z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:%23000;stroke-width:.91780353px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M497.3 524c12 17.8 78.1-39 112.6-61.4L546 515l62.4-36.5c-36.6 28.6-79.5 47.6-93.8 78z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:%23000;stroke-width:.64343536px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M240.7 192.3c-5.7.8-9.2-.2-11.5-2a34 34 0 0 1-7.7-7.5c-5.2-6.6-9.6-13.5-15.6-19.8l-3.7-3.8c-3.3 7.7-6 15.9-6.4 23.7a25 25 0 0 0 6.7 19.8l1.8-1.1q2.4-1.2 7.7-2 4.6-.8 11.7-1.6 2.7-.4 7.1-1.4 3.2-.4 9.9-4.3m-38.2 10.4q-1.8-1.5-4-2.6c-14.3-.6-28-3-41.8-5.2q6 13.5 12.2 26.8a89 89 0 0 0 8.5 14.6q1.5-2.4 3.8-5.4c6.4-8.5 14-17.5 21.3-28zm-25 33.6q-4.8-1-9.4-1.4c-7.4-.6-15.3.1-22.8 4a50 50 0 0 0-12.4 9.7q5.6 4 11.5 6.2a81 81 0 0 0 34.1 3.4c-1.9-4-3.5-7.4-4-10.2q-.7-3-.3-4.6.1-1.5 1.6-4.4zm1 21.9c-9.6 14.4-16.6 26.3-22 34.7 15.5.8 29.7 4.3 43.2 11.6a282 282 0 0 1-21.2-46.3m21.2 46.3a66 66 0 0 1-5.4 8q-14.1 2.8-29 1.7 5.3 9.8 13.8 32a230 230 0 0 1 25.8-32zm-20.6 41.6q-8.1 0-16.4-1.3a131 131 0 0 0-31-2.9q3.4 7.5 7.6 14c5.7 9 12.7 17 20.8 22.2q1.3-4.4 3.7-9.2 4-7.4 10.1-14.6zm-19 32q-5.7.5-11.3 2a50 50 0 0 0-28.8 21.4l5 2c15 4.6 29.2 1.9 40.8-4-2.8-2.9-5-5.8-5.7-8.5a23 23 0 0 1 0-12.9m5.7 21.4-2 4.7a94 94 0 0 0-3.3 41.8q9.3-5.5 17.2-12 10.3-8.3 19-17.6-5-1.7-9.8-3.8c-8-3.5-15-7.2-19.9-11.9zm31 17a242 242 0 0 0 11.6 46q5.4-6.1 10.5-12.5a915 915 0 0 0 18.6-24.3l-13.6-2.2a226 226 0 0 1-27.2-7m40.7 9.2a790 790 0 0 0 17 44.2 739 739 0 0 0 26.3-38.8 698 698 0 0 1-43.3-5.4m43.3 5.4a652 652 0 0 0 20.3 43q12.3-20.1 23.2-40.7a578 578 0 0 1-43.5-2.3m43.5 2.3q10.9 21 23.3 41.4a958 958 0 0 0 20.6-42 1024 1024 0 0 1-44 .6m43.9-.6q12.3 20.3 25.3 40.2l19.4-42.5q-22.6 1.3-44.7 2.3m44.7-2.3 10.8 16.8 14.9 23.3q9.6-21.3 19.4-42.3a2184 2184 0 0 0-45 2.2m45-2.2q13 20.2 25.7 40.5l16-34.1q1.8-4 3.3-7.9l-3.6.4q-20.7.2-41.3 1m45-1.5q11.8 19.7 27.9 37.8c5.6-15 9.8-30.2 11.7-45.2-12.4 3.9-25.7 6-39.6 7.4m39.6-7.4 1.6 1.7a136 136 0 0 0 35.9 27.5q1.2-14.7-1.4-28.1-1.8-9.4-6-17.3l-4.3 3.9a80 80 0 0 1-24.8 12q-.6 0-1 .3m30-16.2a54 54 0 0 0 46.5-.6 59 59 0 0 0-39.8-22.9q.4 1.9.4 3.8a25 25 0 0 1-1.7 12q-1.7 4-5.3 7.7m6.7-23.5a77 77 0 0 0 24-24.5 116 116 0 0 0 6.2-11.1 123 123 0 0 0-46.3 5.8l1.8 2a78 78 0 0 1 10.4 16.3q2.6 6 3.9 11.5m-16-29.8q8.4-18.7 10.6-40.9l.9-3.4a48 48 0 0 1-39 8l-2-2.4-1 3.2q9 10.6 18.2 23.8 6.6 5.2 12.2 11.7m-29.6-38.7a60 60 0 0 1 42.5-16.8l-7.2-8.5a109 109 0 0 0-23-22.9 86 86 0 0 1-3.9 11.4 266 266 0 0 1-8.4 36.8M546 263a83 83 0 0 0 17-4.4 68 68 0 0 0 25.2-16.5 72 72 0 0 0-10.4-4.7 57 57 0 0 0-35-1.3q2.8 4.3 3.9 8.8 1.3 5.2.5 11.8-.3 3-1.2 6.3m-3.2-26.9c9.1-11.7 12.8-27.8 13.2-44.7q-9.8 3.8-18.4 9a63 63 0 0 1-24 9.6q6.2 5.2 11.8 10.8c7.5 4.8 14 9.7 17.4 15.3M513.6 210c-.1-11.1.2-18.7 2-22.4q5.1-3.9 10.7-7.2c-5.9-2.4-14.4-8.6-25.8-17.1q-1.4 16-4.7 32.3 9.3 7.2 17.8 14.4m-13.1-46.7q12.3-8.2 27-13.7 7.8-3.4 15.3-8.4c-13.2-9.4-28-15.6-42-14.6l-1.3.1v.4a42 42 0 0 1 1.4 19.2q.3 8.4-.4 17m-1-36.6a42 42 0 0 0 13-16.5q4.7-10.7 3.9-23.8l-.2-2.2a65 65 0 0 0-35.7 29.4c5.2 1.2 9.8 2.6 12.7 5q2.3 1.6 3.7 3.6 1.5 1.9 2.6 4.5m-19-13-.3-1.7c-3.2-14.1-10.7-28-20.4-40.6q-2.3 4.2-4.1 8.4-7.9 17.6-11.4 35.7 7.5-1.7 14.8-2.5 11.2-1.2 20.8.5zm-36.2 1.8A172 172 0 0 0 409.8 83q-3 18.4-2.5 36-.6 5.3-2.2 10.4 3.3-1 6.7-1.8 11-5.8 23-9.5 4.8-1.5 9.5-2.6m-39.2 13.9a110 110 0 0 1-23.5-17l-.4-4.3c-3.8 3.3-12.3 7.2-23.4 13.2 7 4.8 14 10.6 21.2 16.6q12.1-4.8 26.1-8.5m-47.3-8.1c-2.2-15.2-1.9-30.9-2-47.8l-.6.3a57 57 0 0 0-25.7 23.4 37 37 0 0 0-3.4 10l2.2.1q3.5.4 8 2.7a89 89 0 0 1 21.5 11.3m-31.7-14a36 36 0 0 0-8.1-14.6 60 60 0 0 0-26-15.5 87 87 0 0 0 6.5 33.7q2.4 6 5.2 11.6 1.5-2 3.3-3.7c5.7-5.5 10.8-10.1 15.4-11zm-22.4 15.2c-14.7-4-30.8-5.1-47-5.1q3.2 5.7 6.6 11.3 9.2 14 17 29.5 4.8-7.3 8.8-14.4a161 161 0 0 1 14.6-21.3m-23.4 35.7q-9.9-.1-19.4-1.3a49 49 0 0 1-25.5-8.8 38 38 0 0 1 3.2 19.8c-.3 8.5-.3 17 1.6 24.7q3.3-2 8.2-4.4 5.2-2.3 12.1-7.2a73 73 0 0 0 13.5-14q3.4-4.5 6.3-8.8' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M86.2 705.1c27.2-299.7 457.5-250.7 458.2-253.3L495 514.7s70.7 176 147.2 186.6c44.3 6.1-117.2-14-276.2-14.5-131.2-.3-264.5 18.8-279.8 18.3z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:%23000;stroke-width:1.99338639;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M202.9 575.4a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.8-22.7 25.2 16.6 0 0 1 34.5 5.8m44.3-37.7a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.5-6 25.2 16.6 0 0 1 9-22.6 25.2 16.6 0 0 1 34.4 5.8m28.5 40.9a25.2 16.6 0 0 1-9 22.7 25.2 16.6 0 0 1-34.5-6 25.2 16.6 0 0 1 9-22.7 25.2 16.6 0 0 1 34.4 5.8m-36.8 37.8a25.2 16.6 0 0 1-9 22.6 25.2 16.6 0 0 1-34.5-6 25.2 16.6 0 0 1 9-22.6 25.2 16.6 0 0 1 34.4 5.8m-69.6-.4a25.2 16.6 0 0 1-9.1 22.6 25.2 16.6 0 0 1-34.4-5.9 25.2 16.6 0 0 1 8.9-22.7 25.2 16.6 0 0 1 34.4 5.8m43 43.9a25.2 16.6 0 0 1-9 22.7 25.2 16.6 0 0 1-34.5-5.9 25.2 16.6 0 0 1 9-22.7 25.2 16.6 0 0 1 34.4 5.8m-59.9-1.6a25.2 16.6 0 0 1-9 22.7 25.2 16.6 0 0 1-34.5-6 25.2 16.6 0 0 1 9-22.6 25.2 16.6 0 0 1 34.4 5.8m300.2-67.5a25.2 16.6 0 0 1-9 22.6 25.2 16.6 0 0 1-34.5-5.9 25.2 16.6 0 0 1 9-22.7 25.2 16.6 0 0 1 34.4 5.8m24.5 35.4a25.2 16.6 0 0 1-9 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.8-22.7 25.2 16.6 0 0 1 34.5 5.8m30.7 39.7a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.9-22.6 25.2 16.6 0 0 1 34.4 5.7M516 588a25.2 16.6 0 0 1-9.2 22.8 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 9-22.7 25.2 16.6 0 0 1 34.4 5.8m25.5 38.9a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.8-22.6 25.2 16.6 0 0 1 34.5 5.8m28.7 35.3a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-5.9 25.2 16.6 0 0 1 8.9-22.7 25.2 16.6 0 0 1 34.4 5.8M496.8 547a25.2 16.6 0 0 1-9 22.6 25.2 16.6 0 0 1-34.5-5.9 25.2 16.6 0 0 1 8.9-22.7 25.2 16.6 0 0 1 34.5 5.8m-60.2-1.7a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.9-22.6 25.2 16.6 0 0 1 34.4 5.8m37-40a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-6 25.2 16.6 0 0 1 8.9-22.6 25.2 16.6 0 0 1 34.4 5.8M440.3 465a25.2 16.6 0 0 1-9 22.6 25.2 16.6 0 0 1-34.5-5.9 25.2 16.6 0 0 1 9-22.7 25.2 16.6 0 0 1 34.4 5.8m63.7 2.2a25.2 16.6 0 0 1-9.1 22.7 25.2 16.6 0 0 1-34.4-5.9 25.2 16.6 0 0 1 8.8-22.7 25.2 16.6 0 0 1 34.5 5.8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M272.9 475.2a530 530 0 0 1-66.4-8.1c-23.8-5.4-39.5-13.2-49.6-24.7a38 38 0 0 1-10.5-28.4c0-20.9 11.9-46.6 32.6-70.4 2.3-2.6 5.3-7.2 6.7-10.2 1.3-3 4.5-9.4 7.1-14.3l4.7-9-12.4-14.1a192 192 0 0 1-24.3-32c-2.2-3.6-5.1-8.4-6.6-10.6-3.4-5-2.5-9.5-2.4-14 0-9.4 7.6-20.3 24.6-33.6 7.6-6 8.9-9.3 31.4-10.3a182 182 0 0 0 20.4-1.8 53 53 0 0 0 22.4-17c3.4-4.4 5.4-8 13.6-24.3a240 240 0 0 1 34.6-54.1c13.4-14.1 23-17.6 34.1-12.7a119 119 0 0 1 37 27.4l7 7 6.4-2.5a262 262 0 0 1 15.7-5.2c5.2-1.5 14-4.6 19.8-6.8 34.6-13.5 70.3-12.4 85.3 2.4a28 28 0 0 1 7.2 15.3c1 7-.8 35.4-2.8 46.7-3 17.7-3.5 15.4 4 21.3 3.5 2.9 10.4 9 15.3 13.8s11 10.3 13.5 12.3a57 57 0 0 1 15 18.6c4.6 10.4 4.8 19.6.7 33.5-1.4 4.6-3.4 12.5-4.5 17.7-1 5-3.3 13.9-5 19.5l-3 10.2 5.4 6.4c2.9 3.5 7.2 9 9.6 12.2s6.5 7.7 9.2 10c18.8 15.7 30.1 37.7 27.7 53.8-1.2 7.9-4 13.6-10.4 21.2-13.3 15.8-37.8 29.8-70.6 40.3-7.3 2.4-8.3 2.5-28.8 3.2a1368 1368 0 0 0-97 6.8c-17.4 1.6-37.2 3.2-44 3.7-17.2 1.2-59 1.6-72.7.8' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M252.3 375.4c-19.4 2.6-54.4-16.8-57.2-15.6-1.3.6 43.7 21.6 40 22.5-17.6 4.2-36.8 5-54.7 7l67 4-68 16c23.1-.6 51.3-7.3 69.7-2.7-2.6-9.5.2-22.7 3.2-31.2z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.94639778;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='m309.7 440.7-106.4-38.3 48.8 37.2-57.8-9.5 84.4 53.3z' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M-147.7 567.8a25 25 0 0 1-15.3 23.4 25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15.1' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-51.8 -228 -148)scale(.8878)'/%3E%3Cpath d='M65.3 652.4a25 25 0 0 1-15.2 23.4 25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4A25 25 0 0 1 41 628' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-38 -328 -160.5)scale(.8878)'/%3E%3Cpath d='M-94.2 671.9a25 25 0 0 1-15.2 23.3 25 25 0 0 1-27.4-5.4 25 25 0 0 1-5.2-27.4 25 25 0 0 1 23.4-15' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-44.4 -274.1 -153.8)scale(.8878)'/%3E%3Cpath d='M-371.4 493.4a25 25 0 0 1-15.2 23.3 25 25 0 0 1-27.4-5.4 25 25 0 0 1-5.2-27.3 25 25 0 0 1 23.4-15.2' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-66 -166.6 -140.4)scale(.8878)'/%3E%3Cpath d='M192.2 720a25 25 0 0 1-15.3 23.4 25 25 0 0 1-27.3-5.3 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15.1' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-27.4 -468.8 -178)scale(.8878)'/%3E%3Cpath d='M-418.7 566.5A25 25 0 0 1-434 590a25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-66 -166.6 -140.4)scale(.8878)'/%3E%3Cpath d='M112.9 760.1a25 25 0 0 1-15.2 23.4 25 25 0 0 1-27.4-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15.1' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-27.4 -468.8 -178)scale(.8878)'/%3E%3Cpath d='M-198.9 778.2a25 25 0 0 1-15.2 23.4 25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.4-15.1' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-44.4 -274.1 -153.8)scale(.8878)'/%3E%3Cpath d='M459.7 692.8a25 25 0 0 1-15.3 23.4 25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15.1M403 763.7a25 25 0 0 1-15.3 23.3 25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.4-15' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-7 -1908.3 -357.5)scale(.8878)'/%3E%3Cpath d='M-612.6 243.5A25 25 0 0 1-628 267a25 25 0 0 1-27.3-5.4 25 25 0 0 1-5.3-27.4 25 25 0 0 1 23.5-15m-51.4 75.3a25 25 0 0 1-15.2 23.4 25 25 0 0 1-27.4-5.4 25 25 0 0 1-5.2-27.4 25 25 0 0 1 23.4-15' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:%23fff;stroke-width:20.33586311;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1' transform='rotate(-90 -103 -132.4)scale(.8878)'/%3E%3Cpath d='M299.1 504a25.2 16.6 0 0 1-9 22.8 25.2 16.6 0 0 1-34.5-6 25.2 16.6 0 0 1 8.9-22.7A25.2 16.6 0 0 1 299 504m34 39.5a25.2 16.6 0 0 1-9 22.6 25.2 16.6 0 0 1-34.4-5.9 25.2 16.6 0 0 1 8.8-22.7 25.2 16.6 0 0 1 34.5 5.8' style='opacity:1;fill:%23fff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M516.6 688.2c-52.7 2.4-102.2 3.2-153.7-9.3-30.1-2.8-89 17.7-151.2 18.3-40.8 3.2-41-13.4-26.3-37C207 626 299 578.3 370.2 537.9c-25.9-.7-84.2-18.1-91-46-4.7-18.8.9-41.4 22-47.3 22-6.3 27.2-8.1 60.1 1.7 11 .4 23 13.2 32.8 19.5 14 16 30.8 28.3 34.5 57a75 75 0 0 1-9.1 38 302 302 0 0 1-74.2 50c20-6.4 57.3-27.2 76-36.5 28.7 43.7 61.9 79 95.3 114' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23000;stroke-width:12.43374538;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M332.2 463.8a16 16 0 0 0-2.6 12c3.6 4.3 6.3 8.5 14.3 3.2 5.1-4.5 3.9-7.5 3.6-11.5-2.8-6-2.4-8.1-6-9-4.5-.8-7 3.5-9.3 5.3' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M170.1 432.7c-49.3-3.1-76-15.6-124.1-22.4 36.5 1.2 53 4.7 90.2 2-39.7-13.1-37.7-16.6-74.7-31.7 47.7 15.8 57.7 13 115.3 20.8z' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3Cpath d='M355.4 161c-8.9-7-9.6-15.3-1.2-25.3l-17.8 15.7 11.5-25.8-17.3 20 4.5-25.7-10 22-5.7-22.2-3.1 25.7L307 121c5.2 22.6-1 29.4-7.2 43.8 19.5-9 36.7-13.8 55.6-3.8' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:3.95740938;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M476.5 173.9q-3.3-10.6-15.3-17.4l12.7-22-20.5 16.4 6.1-25.8-14.2 23.8-3.3-25.4-7.2 24-11.3-20.3c-1 9.3 1.4 20.2-15.8 21.8 20.6 2.8 57.3 15.6 68.8 24.9' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.41672087;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M468.7 228.5c6.9-13.4 6-21.6 8.4-32.1l4.7 29.1 17.3-18.6-6.4 23.7 25.6-12.4-15.4 17 30.2 1.6-23.5 5.6 22.5 13c-11.8-5.7-23.7-6.6-36.5 7.5 2.4-29-12.4-31-26.9-34.4z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.35753345;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='m539.5 268.9-55.5 19c11.8 6 19 9 21.5 20.5l34-10-35 2 30-14-33 4zM527 357c12.2 4.6 17.2 9 38.7 8.8L515 373zm-37.4 43.2c20.4.3 42-6 62.3-9.2-17.8 9.7-37.2 11-56 16 15.2 4.8 29.8 10 47.9 15.2-19-1.7-37-6.5-51.7 1 11.1 5.7 21.6 11.4 41.4 15.6l-72-2.9c14.2-2.3 31.6-26.6 28.1-35.7z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.94639778;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M248.2 267.5c.4-18 .9-20.1 10.6-28.8-19.9-3.3-23.1-12.7-34.5-20.8l19.7 25.4-45.8-14 36.9 19.1h-49.6l42 6.4c-2.2 9.5-17 9.6-32.4 16.5 16.2-4 40.2-10 53-3.8z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.44686604;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M269.6 177.5c3.7 16 4.9 30 16.6 43-7.1-3-8.7 1.6-21.5 3.4 6.3-15.8 1.2-31 4.9-46.4z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.26737165;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M235.2 293.6c-29.5-11.7-33.1-7.4-33.1-7.4l30.4 13z' style='fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:%23fff;stroke-width:4.42769051;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M99.2 628.4c-20 4.6-36 17.5-47.2 26.3 12.2-3.9 26.7-8.6 39.5-9.8 6.9-.2 6.6-.2 5.8 3.7l15.7-38.8c-3.4 3.6-8.4 16.1-13.8 18.6z' style='fill:%23000;fill-opacity:1;fill-rule:evenodd;stroke:%23000;stroke-width:.45772466px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1'/%3E%3C/g%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -450.7 -595)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23b93c3c;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -555.3 -328)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -346.9 -328)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -555.3 -460)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -346.9 -460)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -450.7 -460)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23b93c3c;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -450.7 -328)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23b93c3c;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23b93c3c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -555.3 -595)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3Cg transform='matrix(1.5015 0 0 1.14938 -346.9 -595)'%3E%3Ccircle cx='391.4' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='408.7' cy='540.3' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='390.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 610v-71.5' style='fill:none;fill-rule:evenodd;stroke:%23004900;stroke-width:29.07647514;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Ccircle cx='409.7' cy='612.2' r='13.4' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='406.9' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Ccircle cx='393.4' cy='574.4' r='16.3' style='opacity:1;fill:%23004900;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1'/%3E%3Cpath d='M400 537.2V560m0 28.6V610' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3Cpath d='M399.5 574h1' style='fill:none;fill-rule:evenodd;stroke:%23fff;stroke-width:8.37332153;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1'/%3E%3C/g%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M233.6 755.3c-55.5 11.5-169.2 35.5-175 30.4-16-10.9-33-4.2-22.8 10.4 16.2 27.6 41 53 53 82.9 2.3 4.3 4.6 5 7 5 34.8.5 59.5-7.2 92.9-10 5.2-.6 12.2 5.1 16 3.4 3.5-1.9 5-8.5 5.8-12.7 6.9-25.4 28.1-47.7 40-72.7 1.4-3 9.8-3.6 9.7-6.5-1.2-10.8-17.3-30.7-26.6-30.2m-23.1 33.6c12.4-.3-.4 25-5.5 26-5.7 1-6.6-7.2-13.6-7.4-5.2.6-4 4-9.4 5.6-33 6.4-57 8.7-91.4 12.1-4.3.1-15-17.2-9-18.6a840 840 0 0 1 128.9-17.7m-16.4 50c4 6.9-2.8 13.8-7.8 14.6-30.2 4.5-78.3 12.1-82 8.2-2.7-2.9-8.1-11-7.2-16.5 11.1-3.8 92.3-14.5 97-6.3' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.9007 0 0 .97529 22.5 -631.3)'/%3E%3Cpath d='M123.1 656.1c-18.4-7.4-20.4 5.9-17.9 14.4 6.2 20.2 14.4 28.6 24.5 42.6 1.8 2.5 3.8 7.1 3.5 9.3L130.4 930c0 6.5-1.2 27-5.3 23.8-16.3-12.3-21.2-19.3-47.2-51.5-11.2-15-20-7-6.4 12.6 42.5 54.6 46 59.8 46.7 115 1.6 29.3 31.8 24.7 34.6 6.2 3.4-20-1.7-51.8-1.9-73.7-.8-84-.8-158.4 12.9-239.6 2.6-12.6 23-23 34-26.7 4.8-1.6 10.2-14 .8-14.4-25.1-2.7-52.2-15.6-75.5-25.6' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.9007 0 0 .97529 22.5 -631.3)'/%3E%3Cpath d='M90 750c-28.4-1.4-7.3 15.7-1 15.3 35.5-3.2 94-11.7 130.2-19.9 2.5 0-.2-17.2-17.4-18.9-5.2-.3-4.3 2.6-10.5 4.8-27.6 6-76.1 20.3-101.2 18.7M101 860.5C81 899.3 62.7 913 2 939.3c-23.5 9.4-21.8 23.6 6.6 13.9 77.2-30 93.4-48.7 106-85Zm47.9.7c24.8 29 58.7 107 77.6 95.4a61 61 0 0 1 42-8.5c10.7 2.8 11.2 7.8 17.1 11 15.6 6.6 12.4-2 7-9.6-14.1-21.6-80.6-34.7-122.4-92.6z' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.9007 0 0 .97529 22.5 -631.3)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M180 689.5c-6.6-.5-30.4 25.2-36.6 34.3-5.7 6.9 4.8 11.1 8.9 17 5.1 8 1.2 89.9-8.4 135.1l15.5-2.3c10.1-37 17.7-106 25.3-112 7.2-5.7 23.6-5.1 21.6-13.5-4.1-18.7-20.4-58.4-26.3-58.6' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3Cpath d='M122 797c-18.9.8-28.8 10.6-1 14.4 32.7 1.4 100.9-6 101-15.2.5-12.4-9.7-30.3-15.8-30.2-4.8 0-14.6 6-15.5 13.3-.7 8.5-51 16.6-68.7 17.6m31.7 51.9a645 645 0 0 0 70.1-33.7c8.5-4.4 16.5 4.6 14.8 10.5-1.2 3.8-14.1 26.7-2.7 27.6-10.3 8-38.1 31.8-54 67.8l-24.9-2c10.7-26.7 51.4-71.3 48.6-74.2-4.7-5-42.1 13.6-50.3 11.2z' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3Cpath d='M58.3 893.4c40-21.7 129-41.2 200.6-42.3 9-.6 30.9 52.3 30.7 61.5-.6 26-45.5 88.5-73.3 126.1-5.8 6.4-18.9 4.9-27.7-.6l-47.5-31.6c-4.8-4-3-12.6 5-7.7a146 146 0 0 0 44.5 16.4c11 1.5 48.1-86.1 50.4-101 1.3-6.6-7.5-39.2-23.4-40.2-107.2 4-143.1 35.8-157.5 37.3z' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3Cpath d='M35.2 856c-8.4 2.5-5.6 13-4.4 19.3 9.8 43.3 46.4 125.4 53.7 130.2 22.5 12.5 31.3 4.2 30.9-5.2-1.2-9.1-30.3-84.4-48.6-124.2-6.3-12.7-22-22.4-31.6-20m34-20.3c-13.7-6.4-9.3-18.1 9.3-11 42 15.7 58.2 42 72 93.6l-15.5 4.2c-13.3-49-29.1-67-65.8-86.8' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3Cpath d='M121.2 943.3c-15.9 6-13-18-2.2-21 74-23.2 77.6-21.2 90-16.2 11.8 4.7 16 22 .3 21a180 180 0 0 0-88 16.2m3 16c-10.3 2.7-7 18.2 3.2 16a928 928 0 0 1 73-13c8.4-1.5 8.1-22.7.6-26-10-3-11.2 3.6-15.6 6.1-12.2 6.2-37.2 10.5-61.2 16.9' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3Cpath d='M146.8 925.4c2.2 25.8 5 54.8 1.8 80.6l17.5 9.6c3.1-29.7 6.5-63.2 4.2-92.9z' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.974 0 0 1.00441 -5.2 -669.8)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M18.3 756.6c-9.6 1.3-21-11.1-7.3-14.7 43.6-8.4 191.7-31.9 208.7-39 14.9-4.4 48.8 19.7 69.7 30.9 13 7.6 7.1 16.3-2.9 20.2-8.1 2.4-56 6.8-81.6 3.7-4.9-.5-3-12.3-14-14-50-9.3-121.7 6.6-172.6 12.9' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.85009 0 0 .93539 19.5 -595.3)'/%3E%3Cpath d='M202.3 755.2c-1.3 3.7-2 9-4.6 10.3-5.2 1.7-11 .5-13.8 5-4.2 6.7-29.8 25.8-47.6 39.9-5 4-13.6 1-14.1-6.4v27.4l12.5-.6c11-8.6 41.3-37.3 54.9-37.7 10.7-.8 23.2-4.1 26.2-11.3 2.5-6.4-5-11-4.3-14.5 1.1-4.2 10-8.5 13-8.5 5 0-21-7.7-22.2-3.6' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.85009 0 0 .93539 19.5 -595.3)'/%3E%3Cpath d='M44.5 845.7c52.2-12.4 175.2-50.9 193.3-43.7 22.3 10.9 63.5 36.4 64 47.2.3 10.5.2 11.4-8.7 20-13.1 12.8-55.3 77-61.5 101.8-1.4 6.3-.4 18.4-5.2 23.4-6.6 7.4-88-1-141-3.2-18-.6-26.3-19 .5-19.5 34.1-.6 92.4-2 99.3-10.5 6.2-8 49.3-97.5 49.4-107.1 0-6-10.8-20.2-17.2-24.3-8-5.6-118.4 28-167.6 35z' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.85009 0 0 .93539 19.5 -595.3)'/%3E%3Cpath d='M22.8 859c13.9 26.9 43.9 76.6 55.9 124.5l32-2.1c-7.9-36-27.3-97.4-46-127.4-34-53.7-70.2-46.6-42 5m98.5-75c-3.2-15.6-15.5-13-13.6 3.4L126 980.8l14.2-.7zm68.5 1.1h-13.4l-25 191.9H164z' style='fill:%2319328c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='matrix(.85009 0 0 .93539 19.5 -595.3)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M30 770.4c-6.3 8 21.3 29.4 41.6 35.9 6.5 2.4 26.8-18.7 18.9-23.6-21.8-11.3-56.2-18.3-60.6-12.3' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1' transform='translate(5.2 -561)scale(.93642)'/%3E%3Cpath d='M67.1 774.2c-25 93.9-17.7 84-60.7 141.7-7 17.5 15.9 32.7 27 26 15.5-10.4 33-22.3 43.9-35.7 19.7-24.4 110.5-92 172-111 12.3-3.8 23.8-3.3 35-5.7 8.6-2.4 0-15-4.6-19.8-15.7-16.5-43.4-26.3-52.4-19.8-4 2 1.9 29.5-3 32-46.5 22.9-133 81.7-172.2 111.9-1.4.7 1.4-5.3 2.3-7.3 8.7-17.2 18-65.7 22.8-115 .4-11-8.4-7.2-10.1 2.7' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(5.2 -561)scale(.93642)'/%3E%3Cpath d='M114.1 711.6c-10-1-15.5 8.8-14.3 18.5 1 8.1 1.2 18.6 9.8 27.5 5.6 7 1.4 60.1 1.3 105 0 3.2-2.4 3.8-2.3 6.9 0 7.9 4.1 27.8 9.2 28 4.8-.2 11.8-7.6 12.1-18.2 2.7-50 7.3-115.7 11.3-124.1 5-10.6 13.6-7.8 14.4-17.9 1.3-14.1-19-22.6-41.5-25.7' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(5.2 -561)scale(.93642)'/%3E%3Cpath d='M185.3 661.7c-11 0-32.4 30.4-32.5 36.7.1 8.2 20.7 15.7 20.3 28-.4 69.6-18.6 181-4.6 199.3 20.5 24.6 118.8 1.9 124.9-3.1 9.7-8 14-16 10.5-24-3.7-8.8-76.7 11.2-108.9-.7-13.5-5-4-100.6-3.7-156.8.7-12.8 25.7-27.3 25.9-32.9.4-10.8-18.4-45.2-31.9-46.5' style='fill:%23142896;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(5.2 -561)scale(.93642)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'/%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M409.8 440.8c34.6 13.5 72.5 107.5 101 181.5 1.4 3 2.2 6.3 5.7 8.1a595 595 0 0 1 68.7 46.7c23.4 16.6 35.7 5.7 29.3-10-4.8-12.2-23.6-40.4-27.8-49.4-5.3-10-19.3-21.4-37.3-35-35.8-25.8-57.6-82.4-122.3-162.6-3.1-3-19 14.5-17.3 20.7' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='M423.6 433c-78.4 110.3-128 173.3-204 220.5-21 14.3-25.4 2.3-9.1-10.6 93.5-76.2 113.8-140.1 192-224.7z' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='M401 388.1c-30 27.3-48 59-85 78-16.7 10.4-17.3 22.2 4 19.5 34.8-5.5 73.3-26.5 101.8-43.3 24.1-15 21.1-89.5-20.7-54.2m71.9-9.5c-8 26.9-15 47.7-31.2 75.4l18.6 17c25.6-51.4 34.4-76.2 47.3-80 4.3-2.3 1.6-10-.6-14-4.6-8.5-9.2-18.4-15-24.4-12.7-12-14.8 14.8-19 26m52.8 76.4c-5.6-6.1-11.8-4-16.4 6.7-4 10-25.3 37-51.4 62.2-9 9-1 17.8 13 8 23.5-22.3 42.4-39.6 56.8-43 6.6-1.2 18 3 16.8-6-2.3-10.7-10-19.2-18.8-28m-234.8 40.8c-19-18.2-34.1-11.5-14.2 15.7 41.4 57 66.7 67.8 56.7 88.6h19.2c10.5-11.4 6.8-4-1-38.6-2.2-10-31-24.9-60.7-65.7' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='M312.3 554.8 285 581c34.7-2.9 50.4-.5 85.6-20.7 24.9-13.7 9.4-26-4.4-21.2-30 12.6-28 11.2-53.9 15.7m-34 80.6c-7.8 4.7-17.7-3.5-12.3 8.8 5.3 9.3 16.1 8.3 26.7 4.4 9.1-3.4 71.7-51.8 112-57.5l2.2-27c-65.5 22.2-120.9 66-128.6 71.3' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='M426.9 485.8c-3.2-3.7-11.5-9.3-15.7 4-1 6.3 1.6 12.6.7 22.2-4.2 57.9-17 75.4-21.2 99.3-2 12.7 3.7 21.5 13 3.3 6.8-20.5 14.4-35.1 37.8-94.8 1.6-10.6-4.2-22.3-14.6-34M352 608.3l-15.2 8c9.6 22.8-13.2 103.3-30.1 102-20.4-2.1-40.4-17-55.6-28l-6.9.6c17 27.6 39.2 60 63.7 64.4 7.7 1.2 22.8-8.4 26.7-15 29.6-60.8 39.4-91.8 33.2-109.1-2.9-8-12.7-14-15.7-22.9' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='m344.6 659.1-2.1-18.4c-37 12.7-65.8 33.7-94.7 38.1a39 39 0 0 1-28-7.6c-5.3-4.3-8-.7-6.8 5 3 11.6 4.7 11.4 12 17.1 7 4.3 12.5 4.6 23.7 3.8 28.3-2.2 64.5-27.7 95.9-38m59.8-67.3-8.7 27c32.2-4.3 49.9-6.1 78.5-16.6 22.3-16.5 10.4-21-3.4-22.3-39.4 3.2-26 6.8-66.4 11.9' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='m441.3 600.2-21.3 6c-.5 41.2 1 49-3.3 59.7-13.2 25-2.5 29.7-63.9 75.3-8.5 6.3-.7 18.4 9.3 16.5 42.5-7.1 79.4-32.6 81.8-42 5.8-28.3.6-70.3-2.6-115.5' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3Cpath d='m355 652.4-1.2 24.7c-5-1.6 100-7.9 163.6-3.2 8.4-.3 20.9.2 19-7.3-14.4-21.1-22.2-23.5-30.8-24.5-3 .3-8.6 3-12.6 2.7a2884 2884 0 0 1-138 7.6M467.5 708c16.4 11.8 23.1 23.6 27.4 47.6.5 2.8-.5 7.4 7.3 8.8 28.7 5 57.7-8.8 60.3-22.1 1.6-27.3-52-51-89.3-47.8-7.7 1.3-9.1 11-5.7 13.5' style='fill:%23004900;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-140.4 -204)scale(.71142)'/%3E%3C/svg%3E",
+"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400' viewBox='0 0 300 400'%3E%3Cpath d='M233.7 85.4c-62 16.7-86.2 22-166.1 42.9-5.4-.1-16.6-1-21.7-9.5-4.8-6-9.7.6-9.4 6.7.3 8.3.6 15.3 4.4 19.2 21.7 20 29.1 41.3 32.3 65.7-.4 5.3-4.7 10 3.2 9.7 7.8-.6 84.2-6.6 140.4-1.7 4.6.5 5.4-3.7 5.1-5.4-2.6-14.6 24.4-61.4 33.4-80.5 1.9-4 11.8-4.4 14-5-.2.1 2.8-1.6 1-3.8-10.7-13.3-32.8-39.5-36.6-38.3m-21.2 35c9 0 13.4 2.3 9.8 8.3-11.1 22.3-24.3 65.9-28.2 65.2-61.3-.4-88 4-94 2-2.2-.7-5.5-24.8-19.4-42.1q-3.2-4.1 2.3-5.6c20.6-4.6 99.8-28.1 129.5-27.9' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-1.1 -2)'/%3E%3Cpath d='M368 395.1c.3 4.2-.3 12.4 6.2 14.8 5.6.6 19.8 11.4 17 28.6 0 187.9 3.3 200.1.3 345.4-5.7 52.6 6.7 80.5 10.8 87 3 6.6 6.1 5.5 7.6 1.4 13-35.8 18.7-12.5 14.7-102.9-.6-150.1-2.9-315.6 19-327.8 8.7-7 20.1-28.7 17.4-33.7 3.1-5-50.6-54-55.1-49.5-7.4 8-36.7 22-38 36.7' style='fill:%23b93c3c;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' transform='translate(-168.7 -271.2)scale(.7641)'/%3E%3C/svg%3E"
+];
+function tileHTML(t,extra){
+  const cls="tile "+(extra||"")+" "+TT[t].c;
+  return '<span class="'+cls+'"><img class="face" src="'+TILE_IMG[t]
+    +'" alt="'+tileName(t)+'" draggable="false"></span>';
+}
+function backHTML(size){ return '<span class="tile back '+(size||"")+'"></span>'; }
+function meldHTML(md,size){
+  let h='<span class="meld">';
+  const up=()=>tileHTML(md.tile,size);
+  const side=()=>tileHTML(md.tile,size+" side");
+  if(md.type==="ankan"){
+    h+=backHTML(size)+up()+up()+backHTML(size);
+  }else if(md.type==="pon"){
+    h+=up()+side()+up();
+  }else if(md.type==="minkan"){
+    h+=up()+side()+up()+up();
+  }else{
+    h+=up()+'<span class="kstack">'+side()+side()+"</span>"+up()+up();
+  }
+  return h+"</span>";
+}
+function selfFuriten(i){
+  const p=G.players[i];
+  if((p.hand.length%3)!==1)return false;
+  const w=waitsOf(countsOf(p.hand),p.melds.length);
+  if(!w.length)return false;
+  const rv=p.river.map(e=>e.t);
+  return w.some(t=>rv.includes(t));
+}
+function barHTML(i){
+  const p=G.players[i];
+  const nm=(i===0)?"お嬢様":"CPU";
+  const w=(seatWind(i)===6)?"東":"南";
+  const dealer=(i===dealerIdx());
+  const turn=(G.cur===i&&!G.over);
+  let flags="";
+  if(p.riichi||p.riichiPending)flags+='<span class="badge">リーチ</span><span class="stick"></span>';
+  if(i===0&&(p.furitenTemp||p.furitenRiichi||selfFuriten(0)))flags+='<span class="badge ft">フリテン</span>';
+  const sc=G.scores[i];
+  return '<span class="turnDot'+(turn?"":" off")+'"></span>'
+    +'<span class="wind'+(dealer?" dealer":"")+'">'+w+"</span>"
+    +'<span class="nm">'+nm+"</span>"+flags
+    +'<span class="sc'+(sc<0?" minus":"")+'">'+sc+"</span>";
+}
+function riverHTML(i){
+  return G.players[i].river.map((e,ix,arr)=>{
+    let cls="xs";
+    if(e.riichi)cls+=" side";
+    if(e.called)cls+=" called";
+    const h=tileHTML(e.t,cls);
+    return (i===1)?h.replace('<span class="','<span style="z-index:'+(arr.length-ix)+'" class="'):h;
+  }).join("");
+}
+function tileBtn(t,ok,selMode){
+  const dim=(selMode&&!ok)?" dim":"";
+  const on=ok?' onclick="tileTap('+t+')"':"";
+  return '<button class="tileBtn"'+on+">"+tileHTML(t,"sm"+dim)+"</button>";
+}
+function renderHand(){
+  const p=G.players[0];
+  const el=document.getElementById("pHand");
+  let disp=p.hand.slice(), drawn=null;
+  if(p.drawn!=null){
+    const ix=disp.lastIndexOf(p.drawn);
+    if(ix>=0){ disp.splice(ix,1); drawn=p.drawn; }
+  }
+  disp.sort(a2);
+  const selMode=!!(inputState&&inputState.tiles);
+  const okT=t=>selMode&&(inputState.tiles==="all"||inputState.tiles.has(t));
+  let h=disp.map(t=>tileBtn(t,okT(t),selMode)).join("");
+  if(drawn!=null)h+='<span class="drawnGap"></span>'+tileBtn(drawn,okT(drawn),selMode);
+  el.innerHTML=h;
+}
+function renderActionBar(){
+  const el=document.getElementById("actions");
+  el.innerHTML="";
+  if(!inputState)return;
+  if(inputState.hint){
+    const s=document.createElement("span");
+    s.className="hint"; s.textContent=inputState.hint;
+    el.appendChild(s);
+  }
+  for(const b of inputState.buttons){
+    const btn=document.createElement("button");
+    btn.className="btn"+(b.cls?" "+b.cls:"");
+    btn.textContent=b.label;
+    btn.onclick=()=>{ const r=inputState; inputState=null; r.resolve(b.val); };
+    el.appendChild(btn);
+  }
+}
+function assertConservation(){
+  try{
+    let n=G.wall.length+G.rinshan.length+G.doraInd.length+G.uraInd.length;
+    for(const p of G.players){
+      n+=p.hand.length;
+      for(const md of p.melds)n+=(md.type==="pon")?3:4;
+      for(const e of p.river)if(!e.called)n++;
+    }
+    if(n!==52)console.error("牌保存則違反",n);
+  }catch(e){}
+}
+let introActive=false;
+function render(){
+  if(!G.players)return;
+  if(typeof document==="undefined")return;
+  document.getElementById("cpuBar").innerHTML=barHTML(1);
+  document.getElementById("pBar").innerHTML=barHTML(0);
+  document.getElementById("cpuRiver").innerHTML=riverHTML(1);
+  if(G.discardCounts&&(G.discardCounts[0]+G.discardCounts[1])>0)introActive=false;
+  const showIntro=introActive&&G.discardCounts&&G.discardCounts[0]===0&&G.discardCounts[1]===0;
+  document.getElementById("pRiver").innerHTML=(showIntro?'<div id="introHint">ごきげんよう｡1･9･字牌の么九牌だけで戦う二人麻雀ですわ｡<br>中張牌は使いませんの｡13枚から不要牌を切り､相手の捨て牌か自摸で和了なさってくださいまし｡<br>么九牌のみゆえ役は大きく育ちますのよ｡</div>':"")+riverHTML(0);
+  const _app=document.getElementById("app");
+  if(_app)_app.classList.toggle("intro",showIntro);
+  const cpu=G.players[1], me=G.players[0];
+  const cpuHand=G.revealCPU
+    ?cpu.hand.slice().sort(a2).map(t=>tileHTML(t,"xs flip")).join("")
+    :new Array(cpu.hand.length).fill(backHTML("xs")).join("");
+  document.getElementById("cpuMelds").innerHTML=
+    '<span class="meld">'+cpuHand+"</span>"+cpu.melds.map(m=>meldHTML(m,"xs flip")).join("");
+  document.getElementById("pMelds").innerHTML=me.melds.map(m=>meldHTML(m,"xxs")).join("");
+  document.getElementById("roundName").textContent=ROUND_NAMES[Math.min(G.round,3)];
+  document.getElementById("honbaPot").textContent=G.honba+"本場　供託"+(G.pot/1000)+"本";
+  document.getElementById("wallCnt").textContent="お山"+G.wall.length;
+  let dr="";
+  for(let k=0;k<5;k++)dr+=(k<G.doraRevealed)?tileHTML(G.doraInd[k],"xs"):backHTML("xs");
+  document.getElementById("doraRow").innerHTML=dr;
+  renderHand();
+  renderActionBar();
+  assertConservation();
+}
+/* ======================= オーバーレイ/結果 ======================= */
+function overlayOpen(html,fixed){
+  const ov=document.getElementById("overlay"), box=document.getElementById("ovBox");
+  if(box.classList)box.classList.toggle("fixed",!!fixed);
+  box.innerHTML=html;
+  ov.hidden=false;
+  box.scrollTop=0;
+  return box;
+}
+function overlayButtons(box,buttons){
+  return new Promise(res=>{
+    const ov=document.getElementById("overlay");
+    const bt=document.createElement("div"); bt.className="obtns";
+    for(const b of buttons){
+      const el=document.createElement("button");
+      el.className="btn"+(b.cls?" "+b.cls:"");
+      el.textContent=b.label;
+      el.onclick=()=>{ ov.hidden=true; res(b.val); };
+      bt.appendChild(el);
+    }
+    box.appendChild(bt);
+  });
+}
+function showOverlay(html,buttons){
+  return overlayButtons(overlayOpen(html),buttons);
+}
+function callout(text,who){
+  if(typeof document==="undefined"||!document.body)return Promise.resolve();
+  return new Promise(res=>{
+    const d=document.createElement("div");
+    d.className="callout "+(who===1?"top":"bottom");
+    d.innerHTML="<span>"+text+"</span>";
+    document.body.appendChild(d);
+    setTimeout(()=>{ d.remove(); res(); },950);
+  });
+}
+const DISP_ORDER=["tenhou","chihou","daisangen","suuankou_tanki","suuankou","tsuuiisou",
+ "chinroutou","kokushi13","kokushi","shousuushi","daisuushi","suukantsu",
+ "dbriichi","riichi","ippatsu","tsumo","haku","hatsu","chun","jikaze","bakaze",
+ "haitei","houtei","rinshan","chankan",
+ "chiitoi","toitoi","sanankou","sankantsu","sanshokudoukou","honroutou","shousangen","honitsu"];
+function dispIdx(id){ const k=DISP_ORDER.indexOf(id); return k<0?99:k; }
+async function showResult(i,winTile,tsumo,res,pts,honbaWas,potWas,endNow){
+  const p=G.players[i];
+  const who=(i===0)?"お嬢様":"CPU";
+  let head="<h2>"+who+"の"+(tsumo?"ツモ":"ロン")+"和了ですわ</h2>";
+  let tiles=p.hand.slice();
+  if(tsumo){ const ix=tiles.lastIndexOf(winTile); if(ix>=0)tiles.splice(ix,1); }
+  tiles.sort(a2);
+  let hrow=tiles.map(t=>tileHTML(t,"xs")).join("")
+    +'<span style="width:6px;display:inline-block"></span>'
+    +tileHTML(winTile,"xs win");
+  for(const md of p.melds)hrow+='<span style="width:8px;display:inline-block"></span>'+meldHTML(md,"xs");
+  head+='<div class="handrow">'+hrow+"</div>"+'<div class="ylist"><div class="ycol"></div><div class="ycol"></div></div>'+'<div class="rfoot"><div class="rslot rtotal"></div><div class="rslot rscore"></div><div class="rslot rbtn"></div></div>';
+  const box=overlayOpen(head,true);
+  const list=(box.querySelector&&box.querySelector(".ylist"))||box;
+  const foot=(box.querySelector&&box.querySelector(".rfoot"))||box;
+  const slot=n=>(box.querySelector&&box.querySelector("."+n))||foot;
+  let fast=false;
+  box.onclick=()=>{ fast=true; };
+  const beat=ms=>sleep(fast?40:ms);
+  const add=async(html,ms,toBox)=>{
+    const tpl=document.createElement("div");
+    tpl.innerHTML=html;
+    const el=tpl.firstElementChild||tpl;
+    if(toBox){ slot(toBox===true?"rfoot":toBox).appendChild(el); }
+    else{
+      const c0=list.children[0], c1=list.children[1];
+      (c0||list).appendChild(el);
+      if(c0&&c1&&list.clientHeight&&list.scrollHeight>list.clientHeight)c1.appendChild(el);
+      if(list.scrollHeight>list.clientHeight)list.scrollTop=list.scrollHeight;
+    }
+    await beat(ms);
+  };
+  const yline=(a,b)=>'<div class="yline"><span>'+a+"</span><span>"+b+"</span></div>";
+  await beat(500);
+  if(res.yakumanN){
+    const ord=res.yakuman.slice().sort((x,y)=>dispIdx(x[0])-dispIdx(y[0]));
+    for(const ym of ord)await add(yline(YAKU_NAME[ym[0]],"役満"),750);
+  }else{
+    const ord=res.yaku.slice().sort((x,y)=>dispIdx(x[0])-dispIdx(y[0]));
+    for(const y of ord)await add(yline(YAKU_NAME[y[0]],y[1]+"翻"),380);
+    if(res.doraHan)await add(yline("ドラ",res.doraHan+"翻"),380);
+    if(p.riichi)await add(yline("裏ドラ",res.uraHan?res.uraHan+"翻":"なし"),380);
+  }
+  await beat(450);
+  const lim=limitName(res.han,res.fu,res.yakumanN);
+  const sub=res.yakumanN?lim:(res.fu+"符"+res.han+"翻"+(lim?"　"+lim:""));
+  const tier=res.yakumanN>=2?6:res.yakumanN?5:res.han>=13?5:res.han>=11?4:res.han>=8?3:res.han>=6?2:(res.han>=5||basePoints(res.han,res.fu,0)>=2000)?1:0;
+  await add('<div class="total'+(tier?" t"+tier:"")+'"><span class="sub">'+sub+"</span>"
+    +'<span class="pts">'+pts+'点</span>'
+    +"</div>",300,"rtotal");
+  await add(yline("お嬢様",G.scores[0]+"点"),80,"rscore");
+  await add(yline("CPU",G.scores[1]+"点"),80,"rscore");
+  box.onclick=null;
+  await overlayButtons(slot("rbtn"),[{label:endNow?"終局へ参りますわ":"次局へ参りますわ",val:1}]);
+}
+function toast(msg){
+  if(typeof document==="undefined")return;
+  const el=document.createElement("div");
+  el.className="toast"; el.textContent=msg;
+  document.getElementById("toasts").appendChild(el);
+  setTimeout(()=>{ el.style.transition="opacity .4s"; el.style.opacity="0";
+    setTimeout(()=>el.remove(),450); },2600);
+}
+async function showAchievements(){
+  const items=ACHV.map(a=>{
+    const on=unlocked.has(a[0]);
+    return '<div class="ach'+(on?" on":"")+'"><span class="mk">'+(on?"✓":"")+"</span>"
+      +'<span class="an">'+a[1]+'</span><span class="ad">'+a[2]+"</span></div>";
+  }).join("");
+  const h="<h2>実績　"+unlocked.size+" / "+ACHV.length+'</h2><div class="achGrid">'+items+"</div>";
+  const v=await showOverlay(h,[{label:"閉じますわ",val:0,cls:"sub"},{label:"リセット",val:9,cls:"sub"}]);
+  if(v===9){
+    const v2=await showOverlay('<h2>実績リセットですの？</h2><div style="font-size:14px">全ての実績を消去いたしますわ｡取り消しはできませんのよ｡</div>',
+      [{label:"消去しますわ",val:1},{label:"やめておきますわ",val:0,cls:"sub"}]);
+    if(v2===1){ unlocked=new Set(); saveAchv(); toast("実績を消去いたしましたわ"); }
+  }
+}
+/* ======================= 起動 ======================= */
+if(typeof document!=="undefined"&&typeof window!=="undefined"){
+  window.addEventListener("load",async()=>{
+    await loadAchv();
+    try{
+      introActive=true;
+    }catch(e){}
+    document.getElementById("achBtn").onclick=()=>{
+      if(!document.getElementById("overlay").hidden)return;
+      showAchievements();
+    };
+    document.getElementById("newBtn").onclick=async()=>{
+      if(!document.getElementById("overlay").hidden)return;
+      const v=await showOverlay('<h2>新規対局ですの？</h2><div style="font-size:14px">現在の対局を破棄して､最初からお始めになりますのね｡</div>',
+        [{label:"始めますわ",val:1},{label:"やめておきますわ",val:0,cls:"sub"}]);
+      if(v===1)location.reload();
+    };
+    document.getElementById("homeBtn").onclick=async()=>{
+      if(!document.getElementById("overlay").hidden)return;
+      const v=await showOverlay('<h2>お戻りですの？</h2><div style="font-size:14px">現在の対局を破棄して､トップページへ戻りますわ｡</div>',
+        [{label:"戻りますわ",val:1},{label:"対局を続けますわ",val:0,cls:"sub"}]);
+      if(v===1)location.href="./index.html";
+    };
+    newGame();
+  });
+}
+
+</script>
+</body>
+</html>
