@@ -189,7 +189,7 @@ h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-siz
 #pFixed{justify-content:center}
 #selGrid{display:flex;flex-wrap:wrap;gap:2px;padding:6px 2px}
 #selStat{display:flex;align-items:center;gap:5px;font-size:13px;min-height:34px;padding:0 4px;flex-wrap:wrap}
-#pHand.pool{flex-wrap:wrap;gap:3px;row-gap:5px;justify-content:flex-start}
+#pHand.pool{flex-wrap:wrap;gap:3px;row-gap:5px;justify-content:flex-start;align-items:flex-start;align-content:flex-start;min-height:calc((min(100vw,520px) - 66px)/11*1.36*2 + 17px)}
 #pHand.pool .tile{width:calc((min(100vw,520px) - 66px)/11);height:calc((min(100vw,520px) - 66px)/11*1.36)}
 .tile.warnT::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .tile.used{filter:grayscale(1);opacity:.3}
@@ -787,7 +787,7 @@ function seatWind(i){ return i===dealerIdx()?27:28; }
 function mkP(){ return {hand34:[],hand:[],pool:[],river:[],waits:[],
   riichi:false,ippatsuArmed:false,furitenMissed:false,reserve:emptyCounts(),overflow:emptyCounts()}; }
 function newGame(){
-  G.scores=[50000,50000]; G.round=0; G.pot=0; G.over=false;
+  G.scores=[50000,50000]; G.round=0; G.honba=0; G.pot=0; G.over=false;
   startHand();
 }
 async function startHand(){
@@ -985,7 +985,9 @@ async function settleWin(i,winTile,res){
   await callout("ロン",i);
   const p=G.players[i];
   if(i===1)G.revealCPU=true;
-  const pts=res.pts;
+  const honbaWas=G.honba;
+  const ptsBase=res.pts;
+  const pts=ptsBase+honbaWas*300;
   const potWas=G.pot;
   G.scores[i]+=pts+potWas;
   G.scores[1-i]-=pts;
@@ -996,10 +998,10 @@ async function settleWin(i,winTile,res){
   }
   render();
   const endNow=(G.round===3)&&(i!==dealerIdx()||G.scores[i]>G.scores[1-i]);
-  await showResult(i,winTile,res,pts,potWas,endNow);
+  await showResult(i,winTile,res,ptsBase,potWas,endNow);
   if(G.over)return;
   if(endNow){ await gameEnd(); return; }
-  if(i!==dealerIdx())G.round++;
+  if(i!==dealerIdx()){ G.round++; G.honba=0; } else G.honba++;
   if(G.round>3){ await gameEnd(); return; }
   startHand();
 }
@@ -1007,18 +1009,19 @@ async function ryuukyoku(){
   G.revealCPU=true;
   render();
   let h="<h2>流局ですわ…</h2>";
-  for(const i of [0,1]){
+  for(const i of [1,0]){
     const p=G.players[i];
     const ten=p.waits.length>0;
     h+='<div class="yline"><span>'+(i===0?"お嬢様":"CPU")+"</span><span>"
       +(ten?"聴牌ですわ":"ノーテンですの…")+"</span></div>";
-    h+='<div class="handrow">'+p.hand.map(t=>tileHTML(t,(i===1)?"xs flip":"xs")).join("")+"</div>";
+    h+='<div class="handrow">'+p.hand.map(t=>tileHTML(t,"xs")).join("")+"</div>";
     if(ten)h+='<div class="handrow"><span class="lbl" style="margin-right:6px">お待ち牌</span>'
       +p.waits.map(t=>tileHTML(t,"xs")).join("")+"</div>";
   }
   h+='<div class="yline"><span>点数移動</span><span>ございませんわ</span></div>';
   if(G.pot>0)h+='<div class="yline"><span>供託</span><span>'+G.pot+'点 持ち越しですわ</span></div>';
   await showOverlay(h,[{label:"次局へ参りますわ",val:1}]);
+  G.honba++;
   if(!(G.players[dealerIdx()].waits.length>0))G.round++;
   if(G.round>3){ await gameEnd(); return; }
   startHand();
@@ -1229,7 +1232,7 @@ function render(){
   if(typeof document==="undefined")return;
   const app=document.getElementById("app");
   app.classList.toggle("sel",G.phase==="select");
-  app.classList.toggle("firstsel",G.phase==="select"&&G.round===0);
+  app.classList.toggle("firstsel",G.phase==="select"&&G.round===0&&G.honba===0);
   document.getElementById("cpuBar").innerHTML=barHTML(1);
   document.getElementById("pBar").innerHTML=barHTML(0);
   document.getElementById("cpuRiver").innerHTML=riverHTML(1);
@@ -1245,7 +1248,7 @@ function render(){
   document.getElementById("pFixed").innerHTML=
     me.hand.map(t=>tileHTML(t,"xs")).join("");
   document.getElementById("roundName").textContent=ROUND_NAMES[Math.min(G.round,3)];
-  document.getElementById("honbaPot").textContent="供託"+(G.pot/1000)+"本";
+  document.getElementById("honbaPot").textContent=G.honba+"本場　供託"+(G.pot/1000)+"本";
   const rest=34-(G.discCounts?G.discCounts[0]+G.discCounts[1]:0);
   document.getElementById("wallCnt").textContent=
     G.phase==="select"?"お手牌選択":"残"+rest+"打";

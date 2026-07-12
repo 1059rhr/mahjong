@@ -746,12 +746,12 @@ async function ryuukyoku(){
   const ten=[0,1].map(i=>waitsOf(countsOf(G.players[i].hand),G.players[i].melds.length).length>0);
   if(ten[1])G.revealCPU=true;
   let h="<h2>流局ですわ…</h2>";
-  for(const i of [0,1]){
+  for(const i of [1,0]){
     h+='<div class="yline"><span>'+(i===0?"お嬢様":"CPU")+"</span><span>"
       +(ten[i]?"聴牌ですわ":"ノーテンですの…")+"</span></div>";
     if(ten[i]){
       const p=G.players[i];
-      const sz=(i===1)?"xs flip":"xs";
+      const sz="xs";
       let row=p.hand.slice().sort(a2).map(t=>tileHTML(t,sz)).join("");
       for(const md of p.melds)row+='<span style="width:8px;display:inline-block"></span>'+meldHTML(md,sz);
       h+='<div class="handrow">'+row+"</div>";
