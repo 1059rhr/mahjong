@@ -125,6 +125,12 @@ h1{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-siz
 #ovBox .obtns .btn{font-size:15px;font-weight:800;padding:10px 20px;border-radius:9px;border:none;
   color:#241c08;background:linear-gradient(180deg,#f0d78c,var(--gold))}
 #ovBox .obtns .btn.sub{background:#38604c;color:var(--ivory)}
+#ovBox.confirm{background:linear-gradient(180deg,#16493b,#0c352b);border:1px solid rgba(217,185,108,.5);border-radius:18px;max-width:400px;padding:26px 20px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#ovBox.confirm h2{font-family:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif;letter-spacing:.18em;text-indent:.18em;color:#ecdfb4;font-size:21px;font-weight:600;margin:0}
+#ovBox.confirm .csub{color:rgba(239,233,214,.65);font-size:11.5px;margin-top:10px;letter-spacing:.08em;line-height:1.7}
+#ovBox.confirm .obtns{flex-direction:column;gap:8px;margin-top:18px}
+#ovBox.confirm .obtns .btn{width:100%;margin:0;padding:13px;border-radius:12px;border:0;background:#d9b96c;color:#2c2410;font-weight:800;font-size:15px;letter-spacing:.25em;text-indent:.25em;box-shadow:none}
+#ovBox.confirm .obtns .btn.sub{padding:9px;border:1px solid rgba(236,223,180,.35);background:none;color:#cfc6a6;font-size:12px;font-weight:400;letter-spacing:.1em}
 .achGrid{display:flex;flex-direction:column;gap:5px;margin-top:8px}
 .ach{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:8px;
   background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.07);font-size:13px}
@@ -1251,9 +1257,9 @@ function render(){
   assertConservation();
 }
 /* ======================= オーバーレイ/結果 ======================= */
-function overlayOpen(html,fixed){
+function overlayOpen(html,fixed,cls){
   const ov=document.getElementById("overlay"), box=document.getElementById("ovBox");
-  if(box.classList)box.classList.toggle("fixed",!!fixed);
+  if(box.classList){box.classList.toggle("fixed",!!fixed);box.classList.toggle("confirm",cls==="confirm");}
   box.innerHTML=html;
   ov.hidden=false;
   box.scrollTop=0;
@@ -1273,8 +1279,8 @@ function overlayButtons(box,buttons){
     box.appendChild(bt);
   });
 }
-function showOverlay(html,buttons){
-  return overlayButtons(overlayOpen(html),buttons);
+function showOverlay(html,buttons,cls){
+  return overlayButtons(overlayOpen(html,false,cls),buttons);
 }
 function callout(text,who){
   if(typeof document==="undefined"||!document.body)return Promise.resolve();
@@ -1392,8 +1398,8 @@ if(typeof document!=="undefined"&&typeof window!=="undefined"){
     };
     document.getElementById("homeBtn").onclick=async()=>{
       if(!document.getElementById("overlay").hidden)return;
-      const v=await showOverlay('<h2>お戻りですの？</h2><div style="font-size:14px">現在の対局を破棄して､トップページへ戻りますわ｡</div>',
-        [{label:"戻りますわ",val:1},{label:"対局を続けますわ",val:0,cls:"sub"}]);
+      const v=await showOverlay('<h2>お戻りですの？</h2><div class="csub">現在の対局を破棄して､トップページへ戻りますわ｡</div>',
+        [{label:"戻りますわ",val:1},{label:"対局を続けますわ",val:0,cls:"sub"}],"confirm");
       if(v===1)location.href="./index.html";
     };
     if(location.search.indexOf("noboot")<0)newGame();
