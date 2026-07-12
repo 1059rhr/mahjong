@@ -1236,8 +1236,8 @@ if(typeof document!=="undefined"&&typeof window!=="undefined"){
     };
     document.getElementById("newBtn").onclick=async()=>{
       if(!document.getElementById("overlay").hidden)return;
-      const v=await showOverlay('<h2>新規対局ですの？</h2><div style="font-size:14px">現在の対局を破棄して､最初からお始めになりますのね｡</div>',
-        [{label:"始めますわ",val:1},{label:"やめておきますわ",val:0,cls:"sub"}]);
+      const v=await showOverlay('<h2>新規対局ですの？</h2><div class="csub">現在の対局を破棄して､最初からお始めになりますのね｡</div>',
+        [{label:"始めますわ",val:1},{label:"やめておきますわ",val:0,cls:"sub"}],"confirm");
       if(v===1)location.reload();
     };
     document.getElementById("homeBtn").onclick=async()=>{
