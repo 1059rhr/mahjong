@@ -521,7 +521,7 @@ async function turnActions(i,ctx){
 }
 function kanOptions(i){
   const p=G.players[i];
-  if(G.wall.length<3||G.kans>=4)return [];
+  if(G.kans>=4||G.rinshan.length===0)return [];
   const c=countsOf(p.hand);
   const opts=[];
   if(p.riichi){
@@ -580,8 +580,7 @@ async function doKan(i,opt){
   }
   const t=opt.tile;
   await callout("カン",i);
-  G.doraInd.push(G.wall.shift());
-  G.uraInd.push(G.wall.shift());
+  if(G.wall.length>=2){ G.doraInd.push(G.wall.shift()); G.uraInd.push(G.wall.shift()); }
   if(opt.kind==="ankan"){
     removeN(p.hand,t,4);
     p.melds.push({type:"ankan",tile:t});
